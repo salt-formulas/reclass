@@ -27,6 +27,7 @@ def cli():
         ansible_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 
         defaults = {'inventory_base_uri': ansible_dir,
+                    'no_refs' : False,
                     'pretty_print' : True,
                     'output' : 'json',
                     'applications_postfix': '_hosts'
@@ -81,7 +82,7 @@ def cli():
 
             data = groups
 
-        print output(data, options.output, options.pretty_print)
+        print output(data, options.output, options.pretty_print, options.no_refs)
 
     except ReclassException, e:
         e.exit_with_message(sys.stderr)

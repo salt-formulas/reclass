@@ -48,6 +48,9 @@ def make_output_options_group(parser, defaults={}):
                    action="store_true",
                    default=defaults.get('pretty_print', OPT_PRETTY_PRINT),
                    help='try to make the output prettier [%default]')
+    ret.add_option('-r', '--no-refs', dest='no_refs', action="store_true",
+                   default=defaults.get('no_refs', OPT_NO_REFS),
+                   help='output all key values do not use yaml references [%default]')
     return ret
 
 

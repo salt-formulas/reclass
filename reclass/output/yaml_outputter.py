@@ -11,5 +11,16 @@ import yaml
 
 class Outputter(OutputterBase):
 
-    def dump(self, data, pretty_print=False):
-        return yaml.dump(data, default_flow_style=not pretty_print)
+    def dump(self, data, pretty_print=False, no_refs=False):
+        if (no_refs):
+            return yaml.dump(data, default_flow_style=not pretty_print, Dumper=ExplicitDumper)
+        else:
+            return yaml.dump(data, default_flow_style=not pretty_print)
+
+class ExplicitDumper(yaml.SafeDumper):
+    """
+    A dumper that will never emit aliases.
+    """
+
+    def ignore_aliases(self, data):
+        return True

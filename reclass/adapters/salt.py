@@ -89,6 +89,7 @@ def cli():
     try:
         inventory_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
         defaults = {'pretty_print' : True,
+                    'no_refs' : False,
                     'output' : 'yaml',
                     'inventory_base_uri': inventory_dir
                    }
@@ -123,7 +124,7 @@ def cli():
                        ignore_class_notfound=options.ignore_class_notfound,
                        ignore_class_regexp=options.ignore_class_regexp)
 
-        print output(data, options.output, options.pretty_print)
+        print output(data, options.output, options.pretty_print, options.no_refs)
 
     except ReclassException, e:
         e.exit_with_message(sys.stderr)

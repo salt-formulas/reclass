@@ -19,7 +19,8 @@ from reclass.version import *
 
 def main():
     try:
-        defaults = {'pretty_print' : OPT_PRETTY_PRINT,
+        defaults = {'no_refs' : OPT_NO_REFS,
+                    'pretty_print' : OPT_PRETTY_PRINT,
                     'output' : OPT_OUTPUT
                    }
         defaults.update(find_and_read_configfile())
@@ -37,7 +38,7 @@ def main():
         else:
             data = reclass.inventory()
 
-        print output(data, options.output, options.pretty_print)
+        print output(data, options.output, options.pretty_print, options.no_refs)
 
     except ReclassException, e:
         e.exit_with_message(sys.stderr)
