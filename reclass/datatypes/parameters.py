@@ -6,6 +6,7 @@
 # Copyright © 2007–14 martin f. krafft <madduck@madduck.net>
 # Released under the terms of the Artistic Licence 2.0
 #
+import sys
 import types
 from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER,\
                              PARAMETER_DICT_KEY_OVERRIDE_PREFIX
@@ -45,6 +46,7 @@ class Parameters(object):
         self._delimiter = delimiter
         self._base = {}
         self._occurrences = {}
+        self._escapes_handled = {}
         if mapping is not None:
             # we initialise by merging, otherwise the list of references might
             # not be updated
@@ -92,14 +94,9 @@ class Parameters(object):
             ret = new
 
         else:
-            # the new value is a string, let's see if it contains references,
-            # by way of wrapping it in a RefValue and querying the result
+            # the new value is a string, but still wrap it in a ref value to
+            # allow character escaping to handled
             ret = RefValue(new, self.delimiter)
-            if not ret.has_references():
-                # do not replace with RefValue instance if there are no
-                # references, i.e. discard the RefValue in ret, just return
-                # the new value
-                return new
 
         # So we now have a RefValue. Let's, keep a reference to the instance
         # we just created, in a dict indexed by the dictionary path, instead
@@ -265,12 +262,19 @@ class Parameters(object):
                 # dependencies of the current ref, so move on
                 continue
 
-        try:
-            new = refvalue.render(self._base)
-            path.set_value(self._base, new)
+        if refvalue.assembledAllRefs():
+            try:
+                new = refvalue.render(self._base)
+                path.set_value(self._base, new)
 
-            # finally, remove the reference from the occurrences cache
-            del self._occurrences[path]
-        except UndefinedVariableError as e:
-            raise UndefinedVariableError(e.var, path)
-
+                # finally, remove the reference from the occurrences cache
+                del self._occurrences[path]
+            except UndefinedVariableError as e:
+                raise UndefinedVariableError(e.var, path)
+        else:
+            old_ref_count = len(refvalue.get_references())
+            refvalue.assembleRefs(self._base)
+            if old_ref_count != len(refvalue.get_references()):
+                self._interpolate_inner(path, refvalue)
+            else:
+                raise InterpolationError('Bad reference count, path:' + path)

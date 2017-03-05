@@ -64,53 +64,79 @@ class RefValue(object):
         self._delim = delim
         self._tokens = []
         self._refs = []
+        self._allRefs = False
         self._parse(string)
 
-    def _parse(self, string):
-        # order of checking is important here, the nested ${} check then the regex
-        scanner = pp.ZeroOrMore(pp.MatchFirst([
-                                pp.nestedExpr(opener=PARAMETER_INTERPOLATION_SENTINELS[0], closer=PARAMETER_INTERPOLATION_SENTINELS[1]).setResultsName(_REF),
-                                pp.Regex(_RE).setResultsName(_STR, listAllMatches=True)
-                  ]))
-        result = scanner.leaveWhitespace().parseString(string)
-        xml = etree.fromstring(result.asXML())
-        self._parseXML(xml)
-        self._assembleRefs(self._tokens)
+    def _getParser():
 
-    def _parseXML(self, elements):
-        self._tokens = []
-        for el in elements:
-            if (el.tag == _STR):
-                self._tokens.append((_STR, el.text))
-            elif (el.tag == _REF):
-                self._tokens.append((_REF, self._parseRefXML(el)))
-            else:
-                self._tokens.append(('???', '???'))
+        def _push(description, string, location, tokens):
+            RefValue._stack.append((description, tokens))
 
-    def _parseRefXML(self, elements):
+        def _string(string, location, tokens):
+            _push(_STR, string, location, tokens)
+
+        def _reference(string, location, tokens):
+            _push(_REF, string, location, tokens)
+
+        string = (pp.Literal('\\\\').setParseAction(pp.replaceWith('\\')) |
+                  pp.Literal('\\$').setParseAction(pp.replaceWith('$')) |
+                  pp.White() |
+                  pp.Word(pp.printables, excludeChars='\\$')).setParseAction(_string)
+
+        refString = (pp.Literal('\\\\').setParseAction(pp.replaceWith('\\')) |
+                     pp.Literal('\\$').setParseAction(pp.replaceWith('$')) |
+                     pp.Literal('\\{').setParseAction(pp.replaceWith('{')) |
+                     pp.Literal('\\}').setParseAction(pp.replaceWith('}')) |
+                     pp.White() |
+                     pp.Word(pp.printables, excludeChars='\\${}')).setParseAction(_string)
+
+        refItem = pp.Forward()
+        refItems = pp.OneOrMore(refItem)
+        reference = (pp.Literal('${').suppress() + pp.Group(refItems) + pp.Literal('}').suppress()).setParseAction(_reference)
+        refItem << (reference | refString)
+
+        item = reference | string
+        line = pp.OneOrMore(item) + pp.StringEnd()
+        return line
+
+    _stack = []
+    _parser = _getParser()
+
+    def _tokenise(self, items, stack):
         result = []
-        for el in elements:
-            if (len(el) == 0):
-                result.append((_STR, el.text))
+        for n, i in reversed(list(enumerate(items))):
+            t = stack.pop()[0]
+            if (t == _REF):
+               result.insert(0, (_REF, self._tokenise(i, stack) ))
             else:
-                result.append((_REF, self._parseRefXML(el)))
+               result.insert(0, (_STR, i))
         return result
 
-    def _assembleRefs(self, tokens, first=True):
-        string = ''
-        retNone = False
+    def _parse(self, string):
+        del RefValue._stack[:]
+        result = RefValue._parser.leaveWhitespace().parseString(string)
+        self._tokens = self._tokenise(result, RefValue._stack)
+        self.assembleRefs()
+
+    def _assembleRefs(self, tokens, resolver, first=True):
         for token in tokens:
-            if token[0] == _STR:
-                string += token[1]
-            elif token[0] == _REF:
-                s = self._assembleRefs(token[1], first=False)
-                if s != None:
+            if token[0] == _REF:
+                self._assembleRefs(token[1], resolver, False)
+                try:
+                    s = self._assemble(token[1], resolver)
                     self._refs.append(s)
-                if not first:
-                   retNone = True
-        if retNone:
-            string = None
-        return string
+                except UndefinedVariableError as e:
+                    self._allRefs = False
+                    pass
+
+    def assembleRefs(self, context={}):
+        resolver = lambda s: self._resolve(s, context)
+        self._refs = []
+        self._allRefs = True
+        self._assembleRefs(self._tokens, resolver, True)
+
+    def assembledAllRefs(self):
+        return self._allRefs
 
     def _resolve(self, ref, context):
         path = DictPath(self._delim, ref)
