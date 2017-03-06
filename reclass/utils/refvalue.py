@@ -19,7 +19,6 @@ from reclass.errors import IncompleteInterpolationError, \
         UndefinedVariableError
 
 _SENTINELS = [re.escape(s) for s in PARAMETER_INTERPOLATION_SENTINELS]
-_RE = '(.+?)(?={0}|$)'.format(_SENTINELS[0])
 
 _STR = 'STR'
 _REF = 'REF'
@@ -69,14 +68,13 @@ class RefValue(object):
 
     def _getParser():
 
-        def _push(description, string, location, tokens):
-            RefValue._stack.append((description, tokens))
-
         def _string(string, location, tokens):
-            _push(_STR, string, location, tokens)
+            token = tokens[0]
+            tokens[0] = (_STR, token)
 
         def _reference(string, location, tokens):
-            _push(_REF, string, location, tokens)
+            token = list(tokens[0])
+            tokens[0] = (_REF, token)
 
         string = (pp.Literal('\\\\').setParseAction(pp.replaceWith('\\')) |
                   pp.Literal('\\$').setParseAction(pp.replaceWith('$')) |
@@ -92,30 +90,20 @@ class RefValue(object):
 
         refItem = pp.Forward()
         refItems = pp.OneOrMore(refItem)
-        reference = (pp.Literal('${').suppress() + pp.Group(refItems) + pp.Literal('}').suppress()).setParseAction(_reference)
+        reference = (pp.Literal(PARAMETER_INTERPOLATION_SENTINELS[0]).suppress() +
+                     pp.Group(refItems) +
+                     pp.Literal(PARAMETER_INTERPOLATION_SENTINELS[1]).suppress()).setParseAction(_reference)
         refItem << (reference | refString)
 
         item = reference | string
         line = pp.OneOrMore(item) + pp.StringEnd()
         return line
 
-    _stack = []
     _parser = _getParser()
 
-    def _tokenise(self, items, stack):
-        result = []
-        for n, i in reversed(list(enumerate(items))):
-            t = stack.pop()[0]
-            if (t == _REF):
-               result.insert(0, (_REF, self._tokenise(i, stack) ))
-            else:
-               result.insert(0, (_STR, i))
-        return result
-
     def _parse(self, string):
-        del RefValue._stack[:]
         result = RefValue._parser.leaveWhitespace().parseString(string)
-        self._tokens = self._tokenise(result, RefValue._stack)
+        self._tokens = result.asList()
         self.assembleRefs()
 
     def _assembleRefs(self, tokens, resolver, first=True):
