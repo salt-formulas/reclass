@@ -42,7 +42,7 @@ class ScaItem(object):
                 raise TypeError('allow scalar over dict = False: cannot merge %s over %s' % (repr(self), repr(item)))
         raise TypeError('Cannot merge %s over %s' % (repr(self), repr(item)))
 
-    def render(self, context, options):
+    def render(self, context):
         return self._value
 
     def __repr__(self):

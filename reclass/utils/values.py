@@ -8,10 +8,12 @@ from reclass.utils.mergeoptions import MergeOptions
 
 class Values(object):
 
-    def __init__(self):
+    def __init__(self, value=None):
         self._refs = []
         self._allRefs = True
         self._values = []
+        if value is not None:
+            self._values.append(value)
         self.assembleRefs()
 
     def append(self, value):
@@ -56,8 +58,6 @@ class Values(object):
 
     def render(self, context, options=None):
         from reclass.datatypes.parameters import Parameters
-        from reclass.utils.dictitem import DictItem
-        from reclass.utils.scaitem import ScaItem
 
         if options is None:
             options = MergeOptions()
@@ -74,7 +74,8 @@ class Values(object):
                     output = p1.as_dict()
                     continue
                 elif isinstance(output, list) and isinstance(new, list):
-                    raise TypeError('Cannot merge %s over %s' % (repr(self._values[n]), repr(self._values[n-1])))
+                    output.extend(new)
+                    continue
                 elif isinstance(output, (dict, list)) or isinstance(new, (dict, list)):
                     raise TypeError('Cannot merge %s over %s' % (repr(self._values[n]), repr(self._values[n-1])))
                 else:

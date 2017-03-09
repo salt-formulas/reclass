@@ -50,7 +50,7 @@ class DictItem(object):
                 raise TypeError('allow dict over scalar = False: cannot merge %s onto %s' % (repr(self), repr(item)))
         raise TypeError('Cannot merge %s over %s' % (repr(self), repr(item)))
 
-    def render(self, context, options):
+    def render(self, context):
         value = {}
         for key, item in self._items.iteritems():
             value[key] = item

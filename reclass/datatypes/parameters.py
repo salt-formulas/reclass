@@ -100,17 +100,10 @@ class Parameters(object):
             return new
 
         values = cur
-        if isinstance(cur, dict):
-            value = Value(cur)
-            values = Values()
-            values.append(value)
-        elif isinstance(cur, list):
-            value = Value(cur)
-            values = Values()
-            values.append(value)
+        if isinstance(cur, (dict, list)):
+            values = Values(Value(cur))
         elif isinstance(cur, Value):
-            values = Values()
-            values.append(cur)
+            values = Values(cur)
 
         if isinstance(new, (dict, list)):
            new = Value(new)
@@ -306,9 +299,8 @@ class Parameters(object):
                     value_inner = path_from_ref.get_value(self._base)
                     self._interpolate_inner(path_from_ref, value_inner, options)
 
-        # all references deferenced and on more references to work out
-        # so render value
         if value.allRefs():
+            # all references have been deferenced so render value
             try:
                 new = value.render(self._base, options)
                 if isinstance(new, dict):
@@ -320,7 +312,7 @@ class Parameters(object):
                 else:
                     path.set_value(self._base, new)
 
-                # finally, remove the reference from the occurrences cache
+                # remove the reference from the unrendered list
                 del self._unrendered[path]
             except UndefinedVariableError as e:
                 raise UndefinedVariableError(e.var, path)

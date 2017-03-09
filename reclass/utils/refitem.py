@@ -6,12 +6,11 @@
 
 from reclass.utils.mergeoptions import MergeOptions
 from reclass.utils.dictpath import DictPath
-from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER
 from reclass.errors import UndefinedVariableError
 
 class RefItem(object):
 
-    def __init__(self, items, delimiter=PARAMETER_INTERPOLATION_DELIMITER):
+    def __init__(self, items, delimiter):
         self._delimiter = delimiter
         self._items = items
         self._refs = []
@@ -22,13 +21,12 @@ class RefItem(object):
         self._refs = []
         self._allRefs = True
         value = ''
-        options = MergeOptions()
         for item in self._items:
             if item.has_references():
                 item.assembleRefs(context)
                 self._refs.extend(item.get_references())
             try:
-                value += item.render(context, options)
+                value += item.render(context)
             except UndefinedVariableError as e:
                 self._allRefs = False
         if self._allRefs:
@@ -53,14 +51,14 @@ class RefItem(object):
         except KeyError as e:
             raise UndefinedVariableError(ref)
 
-    def render(self, context, options):
+    def render(self, context):
         # Preserve type if only one item
         if len(self._items) == 1:
-            return self._resolve(self._items[0].render(context, options), context)
+            return self._resolve(self._items[0].render(context), context)
         # Multiple items
         string = ''
         for item in self._items:
-            string += str(item.render(context, options))
+            string += str(item.render(context))
         return self._resolve(string, context)
 
     def __repr__(self):

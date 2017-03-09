@@ -36,7 +36,7 @@ class ListItem(object):
     def get_references(self):
         return self._refs
 
-    def render(self, context, options):
+    def render(self, context):
         value = []
         for item in self._items:
             value.append(item)
