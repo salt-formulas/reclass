@@ -6,13 +6,17 @@
 # Copyright © 2007–14 martin f. krafft <madduck@madduck.net>
 # Released under the terms of the Artistic Licence 2.0
 #
+
+import copy
 import sys
 import types
-from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER,\
-                             PARAMETER_DICT_KEY_OVERRIDE_PREFIX
+from collections import namedtuple
+from reclass.defaults import *
+from reclass.utils.mergeoptions import MergeOptions
 from reclass.utils.dictpath import DictPath
-from reclass.utils.refvalue import RefValue
-from reclass.errors import InfiniteRecursionError, UndefinedVariableError
+from reclass.utils.value import Value
+from reclass.utils.values import Values
+from reclass.errors import InfiniteRecursionError, UndefinedVariableError, InterpolationError
 
 class Parameters(object):
     '''
@@ -45,7 +49,7 @@ class Parameters(object):
             delimiter = Parameters.DEFAULT_PATH_DELIMITER
         self._delimiter = delimiter
         self._base = {}
-        self._occurrences = {}
+        self._unrendered = {}
         self._escapes_handled = {}
         if mapping is not None:
             # we initialise by merging, otherwise the list of references might
@@ -72,50 +76,53 @@ class Parameters(object):
     def as_dict(self):
         return self._base.copy()
 
-    def _update_scalar(self, cur, new, path):
-        if isinstance(cur, RefValue) and path in self._occurrences:
-            # If the current value already holds a RefValue, we better forget
-            # the occurrence, or else interpolate() will later overwrite
-            # unconditionally. If the new value is a RefValue, the occurrence
-            # will be added again further on
-            del self._occurrences[path]
+    def _itemise_list(self, item_list):
+        for n, value in enumerate(item_list):
+            if isinstance(value, dict):
+                self._itemise_dict(value)
+            elif isinstance(value, list):
+                self._itemise_list(value)
+            elif not isinstance(value, (Value, Values)):
+                item_list[n] = Value(value, self._delimiter)
 
-        if self.delimiter is None or not isinstance(new, (types.StringTypes,
-                                                          RefValue)):
-            # either there is no delimiter defined (and hence no references
-            # are being used), or the new value is not a string (and hence
-            # cannot be turned into a RefValue), and not a RefValue. We can
-            # shortcut and just return the new scalar
+    def _itemise_dict(self, dictionary):
+        for key, value in dictionary.iteritems():
+            if isinstance(value, dict):
+                self._itemise_dict(value)
+            elif isinstance(value, list):
+                self._itemise_list(value)
+                dictionary[key] = Value(value, self._delimiter)
+            elif not isinstance(value, (Value, Values)):
+                dictionary[key] = Value(value, self._delimiter)
+
+    def _update_value(self, cur, new, path):
+        if cur is None:
             return new
 
-        elif isinstance(new, RefValue):
-            # the new value is (already) a RefValue, so we need not touch it
-            # at all
-            ret = new
+        values = cur
+        if isinstance(cur, dict):
+            value = Value(cur)
+            values = Values()
+            values.append(value)
+        elif isinstance(cur, list):
+            value = Value(cur)
+            values = Values()
+            values.append(value)
+        elif isinstance(cur, Value):
+            values = Values()
+            values.append(cur)
 
+        if isinstance(new, (dict, list)):
+           new = Value(new)
+
+        if isinstance(new, Value):
+            values.append(new)
+        elif isinstance(new, Values):
+            values.extend(new)
         else:
-            # the new value is a string, but still wrap it in a ref value to
-            # allow character escaping to handled
-            ret = RefValue(new, self.delimiter)
+            raise TypeError('Can not merge %r into %r' % (new, cur))
 
-        # So we now have a RefValue. Let's, keep a reference to the instance
-        # we just created, in a dict indexed by the dictionary path, instead
-        # of just a list. The keys are required to resolve dependencies during
-        # interpolation
-        self._occurrences[path] = ret
-        return ret
-
-    def _extend_list(self, cur, new, path):
-        if isinstance(cur, list):
-            ret = cur
-            offset = len(cur)
-        else:
-            ret = [cur]
-            offset = 1
-
-        for i in xrange(len(new)):
-            ret.append(self._merge_recurse(None, new[i], path.new_subpath(offset + i)))
-        return ret
+        return values
 
     def _merge_dict(self, cur, new, path, initmerge):
         """Merge a dictionary with another dictionary.
@@ -179,21 +186,14 @@ class Parameters(object):
 
         """
 
-        if path is None:
-            path = DictPath(self.delimiter)
 
-        if isinstance(new, dict):
+        if isinstance(new, dict) and (cur is None or isinstance(cur, (dict))):
             if cur is None:
                 cur = {}
             return self._merge_dict(cur, new, path, initmerge)
 
-        elif isinstance(new, list):
-            if cur is None:
-                cur = []
-            return self._extend_list(cur, new, path)
-
         else:
-            return self._update_scalar(cur, new, path)
+            return self._update_value(cur, new, path)
 
     def merge(self, other, initmerge=False):
         """Merge function (public edition).
@@ -210,71 +210,128 @@ class Parameters(object):
         """
 
         if isinstance(other, dict):
-            self._base = self._merge_recurse(self._base, other,
-                                             None, initmerge)
+            itemised_other = copy.deepcopy(other)
+            self._itemise_dict(itemised_other)
+            self._base = self._merge_recurse(self._base, itemised_other,
+                                             DictPath(self.delimiter), initmerge)
 
         elif isinstance(other, self.__class__):
             self._base = self._merge_recurse(self._base, other._base,
-                                             None, initmerge)
+                                             DictPath(self.delimiter), initmerge)
 
         else:
             raise TypeError('Cannot merge %s objects into %s' % (type(other),
                             self.__class__.__name__))
 
     def has_unresolved_refs(self):
-        return len(self._occurrences) > 0
+        return len(self._unrendered) > 0
 
-    def interpolate(self):
+    def resolve_simple(self, options=None):
+        if options is None:
+            options = MergeOptions()
+        self._resolve_simple_recurse_dict(self._base, DictPath(self.delimiter), options)
+
+    def _resolve_simple_recurse_dict(self, dictionary, path, options):
+        for key, value in dictionary.iteritems():
+            if isinstance(value, Values):
+                if value.has_references():
+                    self._unrendered[path.new_subpath(key)] = True
+                    continue
+                else:
+                    value = value.merge(options)
+            if isinstance(value, Value) and value.is_container():
+                value = value.contents()
+
+            if isinstance(value, dict):
+                self._resolve_simple_recurse_dict(value, path.new_subpath(key), options)
+                dictionary[key] = value
+            elif isinstance(value, list):
+                self._resolve_simple_recurse_list(value, path.new_subpath(key), options)
+                dictionary[key] = value
+            elif isinstance(value, Value):
+                if value.has_references():
+                    self._unrendered[path.new_subpath(key)] = True
+                else:
+                    dictionary[key] = value.render({}, options)
+
+    def _resolve_simple_recurse_list(self, item_list, path, options):
+        for n, value in enumerate(item_list):
+            if isinstance(value, Values):
+                if value.has_references():
+                    self._unrendered[path.new_subpath(n)] = True
+                    continue
+                else:
+                    value = value.merge(options)
+            if isinstance(value, Value) and value.is_container():
+                value = value.contents()
+
+            if isinstance(value, dict):
+                self._resolve_simple_recurse_dict(value, path.new_subpath(n), options)
+                item_list[n] = value
+            elif isinstance(value, list):
+                self._resolve_simple_recurse_list(value, path.new_subpath(n), options)
+                item_list[n] = value
+            elif isinstance(value, Value):
+                if value.has_references():
+                    self._unrendered[path.new_subpath(n)] = True
+                else:
+                    item_list[n] = value.render({}, options)
+
+    def interpolate(self, options=None):
+        if options is None:
+            options = MergeOptions()
+        self._unrendered = {}
+        self.resolve_simple(options)
         while self.has_unresolved_refs():
             # we could use a view here, but this is simple enough:
             # _interpolate_inner removes references from the refs hash after
             # processing them, so we cannot just iterate the dict
-            path, refvalue = self._occurrences.iteritems().next()
-            self._interpolate_inner(path, refvalue)
+            path, value = self._unrendered.iteritems().next()
+            self._interpolate_inner(path, path.get_value(self._base), options)
 
-    def _interpolate_inner(self, path, refvalue):
-        self._occurrences[path] = True  # mark as seen
-        for ref in refvalue.get_references():
+    def _interpolate_inner(self, path, value, options):
+        self._unrendered[path] = False  # mark as seen
+        for ref in value.get_references():
             path_from_ref = DictPath(self.delimiter, ref)
-            try:
-                refvalue_inner = self._occurrences[path_from_ref]
 
-                # If there is no reference, then this will throw a KeyError,
-                # look further down where this is caught and execution passed
-                # to the next iteration of the loop
-                #
-                # If we get here, then the ref references another parameter,
-                # requiring us to recurse, dereferencing first those refs that
-                # are most used and are thus at the leaves of the dependency
-                # tree.
-
-                if refvalue_inner is True:
+            if path_from_ref in self._unrendered:
+                if self._unrendered[path_from_ref] is False:
                     # every call to _interpolate_inner replaces the value of
-                    # the saved occurrences of a reference with True.
-                    # Therefore, if we encounter True instead of a refvalue,
+                    # self._unrendered[path] with False
+                    # Therefore, if we encounter False instead of True,
                     # it means that we have already processed it and are now
                     # faced with a cyclical reference.
                     raise InfiniteRecursionError(path, ref)
-                self._interpolate_inner(path_from_ref, refvalue_inner)
+                else:
+                    value_inner = path_from_ref.get_value(self._base)
+                    self._interpolate_inner(path_from_ref, value_inner, options)
 
-            except KeyError as e:
-                # not actually an error, but we are done resolving all
-                # dependencies of the current ref, so move on
-                continue
-
-        if refvalue.assembledAllRefs():
+        # all references deferenced and on more references to work out
+        # so render value
+        if value.allRefs():
             try:
-                new = refvalue.render(self._base)
-                path.set_value(self._base, new)
+                new = value.render(self._base, options)
+                if isinstance(new, dict):
+                    self._resolve_simple_recurse_dict(new, path, options)
+                    path.set_value(self._base, copy.deepcopy(new))
+                elif isinstance(new, list):
+                    self._resolve_simple_recurse_list(new, path, options)
+                    path.set_value(self._base, copy.deepcopy(new))
+                else:
+                    path.set_value(self._base, new)
 
                 # finally, remove the reference from the occurrences cache
-                del self._occurrences[path]
+                del self._unrendered[path]
             except UndefinedVariableError as e:
                 raise UndefinedVariableError(e.var, path)
         else:
-            old_ref_count = len(refvalue.get_references())
-            refvalue.assembleRefs(self._base)
-            if old_ref_count != len(refvalue.get_references()):
-                self._interpolate_inner(path, refvalue)
+            # not all references in the value could be calculated previously so
+            # try recalculating references with current context and recursively
+            # call _interpolate_inner if the number of references has increased
+            # Otherwise raise an error
+            old = len(value.get_references())
+            value.assembleRefs(self._base)
+            if old != len(value.get_references()):
+                self._interpolate_inner(path, value, options)
             else:
-                raise InterpolationError('Bad reference count, path:' + path)
+                raise InterpolationError('Bad reference count, path:' + repr(path))
