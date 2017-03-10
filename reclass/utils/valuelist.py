@@ -4,6 +4,8 @@
 # This file is part of reclass
 #
 
+import copy
+
 from reclass.utils.mergeoptions import MergeOptions
 
 class ValueList(object):
@@ -65,6 +67,8 @@ class ValueList(object):
         for n, value in enumerate(self._values):
             if n is 0:
                 output = self._values[0].render(context, options)
+                if isinstance(output, list):
+                    output = copy.deepcopy(output)
             else:
                 new = value.render(context, options)
                 if isinstance(output, dict) and isinstance(new, dict):

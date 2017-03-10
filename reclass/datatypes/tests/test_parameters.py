@@ -324,5 +324,20 @@ class TestParametersNoMock(unittest.TestCase):
         p1.interpolate()
         self.assertEqual(p1.as_dict(), r)
 
+    def test_merge_referenced_lists(self):
+        p1 = Parameters({'one': [ 1, 2, 3 ], 'two': [ 4, 5, 6 ], 'three': '${one}'})
+        p2 = Parameters({'three': '${two}'})
+        r = {'one': [ 1, 2, 3 ], 'two': [ 4, 5, 6], 'three': [ 1, 2, 3, 4, 5, 6 ]}
+        p1.merge(p2)
+        p1.interpolate()
+        self.assertEqual(p1.as_dict(), r)
+
+    def test_merge_referenced_dicts(self):
+        p1 = Parameters({'one': {'a': 1, 'b': 2}, 'two': {'c': 3, 'd': 4}, 'three': '${one}'})
+        p2 = Parameters({'three': '${two}'})
+        r = {'one': {'a': 1, 'b': 2}, 'two': {'c': 3, 'd': 4}, 'three': {'a': 1, 'b': 2, 'c': 3, 'd': 4}}
+        p1.merge(p2)
+        p1.interpolate()
+        self.assertEqual(p1.as_dict(), r)
 if __name__ == '__main__':
     unittest.main()
