@@ -26,7 +26,7 @@ class RefItem(object):
                 item.assembleRefs(context)
                 self._refs.extend(item.get_references())
             try:
-                value += item.render(context)
+                value += str(item.render(context))
             except UndefinedVariableError as e:
                 self._allRefs = False
         if self._allRefs:
