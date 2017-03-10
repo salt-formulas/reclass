@@ -115,7 +115,7 @@ class TestParameters(unittest.TestCase):
 
     """def test_get_dict(self):
         p, b = self._construct_mocked_params(SIMPLE)
-        p.resolve_simple()
+        p.render_simple()
         self.assertDictEqual(p.as_dict(), SIMPLE)
 
     def test_merge_scalars(self):
@@ -123,7 +123,7 @@ class TestParameters(unittest.TestCase):
         mergee = {'five':5,'four':4,'None':None,'tuple':(1,2,3)}
         p2, b2 = self._construct_mocked_params(mergee)
         p1.merge(p2)
-        p1.resolve_simple()
+        p1.render_simple()
         for key, value in mergee.iteritems():
             # check that each key, value in mergee resulted in a get call and
             # a __setitem__ call against b1 (the merge target)
@@ -135,7 +135,7 @@ class TestParameters(unittest.TestCase):
         p2 = Parameters({'b' : mock.sentinel.goal})
         p1.merge(p2)
         p1.interpolate()
-        p2.resolve_simple()
+        p2.render_simple()
         self.assertEqual(p1.as_dict()['b'], mock.sentinel.goal)"""
 
 
@@ -145,7 +145,7 @@ class TestParametersNoMock(unittest.TestCase):
         p = Parameters(SIMPLE)
         mergee = {'five':5,'four':4,'None':None,'tuple':(1,2,3)}
         p.merge(mergee)
-        p.resolve_simple()
+        p.render_simple()
         goal = SIMPLE.copy()
         goal.update(mergee)
         self.assertDictEqual(p.as_dict(), goal)
@@ -154,7 +154,7 @@ class TestParametersNoMock(unittest.TestCase):
         p = Parameters(SIMPLE)
         mergee = {'two':5,'four':4,'three':None,'one':(1,2,3)}
         p.merge(mergee)
-        p.resolve_simple()
+        p.render_simple()
         goal = SIMPLE.copy()
         goal.update(mergee)
         self.assertDictEqual(p.as_dict(), goal)
@@ -165,7 +165,7 @@ class TestParametersNoMock(unittest.TestCase):
         p1 = Parameters(dict(list=l1[:]))
         p2 = Parameters(dict(list=l2))
         p1.merge(p2)
-        p1.resolve_simple()
+        p1.render_simple()
         self.assertListEqual(p1.as_dict()['list'], l1+l2)
 
     def test_merge_list_into_scalar(self):
@@ -174,7 +174,7 @@ class TestParametersNoMock(unittest.TestCase):
         options.allow_list_over_scalar = True
         p1 = Parameters(dict(key=l[0]))
         p1.merge(Parameters(dict(key=l[1:])))
-        p1.resolve_simple(options)
+        p1.render_simple(options)
         self.assertListEqual(p1.as_dict()['key'], l)
 
     def test_merge_scalar_over_list(self):
@@ -183,14 +183,14 @@ class TestParametersNoMock(unittest.TestCase):
         options.allow_scalar_over_list = True
         p1 = Parameters(dict(key=l[:2]))
         p1.merge(Parameters(dict(key=l[2])))
-        p1.resolve_simple(options)
+        p1.render_simple(options)
         self.assertEqual(p1.as_dict()['key'], l[2])
 
     def test_merge_dicts(self):
         mergee = {'five':5,'four':4,'None':None,'tuple':(1,2,3)}
         p = Parameters(dict(dict=SIMPLE))
         p.merge(Parameters(dict(dict=mergee)))
-        p.resolve_simple()
+        p.render_simple()
         goal = SIMPLE.copy()
         goal.update(mergee)
         self.assertDictEqual(p.as_dict(), dict(dict=goal))
@@ -199,7 +199,7 @@ class TestParametersNoMock(unittest.TestCase):
         mergee = {'two':5,'four':4,'three':None,'one':(1,2,3)}
         p = Parameters(dict(dict=SIMPLE))
         p.merge(Parameters(dict(dict=mergee)))
-        p.resolve_simple()
+        p.render_simple()
         goal = SIMPLE.copy()
         goal.update(mergee)
         self.assertDictEqual(p.as_dict(), dict(dict=goal))
@@ -214,7 +214,7 @@ class TestParametersNoMock(unittest.TestCase):
                 'two': ['gamma']}
         p = Parameters(dict(dict=base))
         p.merge(Parameters(dict(dict=mergee)))
-        p.resolve_simple()
+        p.render_simple()
         self.assertDictEqual(p.as_dict(), dict(dict=goal))
 
     def test_merge_dict_into_scalar(self):
@@ -229,7 +229,7 @@ class TestParametersNoMock(unittest.TestCase):
         options = MergeOptions()
         options.allow_scalar_over_dict = True
         p.merge(Parameters(mergee))
-        p.resolve_simple(options)
+        p.render_simple(options)
         self.assertDictEqual(p.as_dict(), mergee)
 
     def test_interpolate_single(self):

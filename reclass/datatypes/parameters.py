@@ -76,24 +76,21 @@ class Parameters(object):
     def as_dict(self):
         return self._base.copy()
 
-    def _itemise_list(self, item_list):
-        for n, value in enumerate(item_list):
-            if isinstance(value, dict):
-                self._itemise_dict(value)
-            elif isinstance(value, list):
-                self._itemise_list(value)
-            elif not isinstance(value, (Value, ValueList)):
-                item_list[n] = Value(value, self._delimiter)
+    def _wrap_container(self, container, key, value):
+        if isinstance(value, dict):
+            self._wrap_dict(value)
+        elif isinstance(value, list):
+            self._wrap_list(value)
+        elif not isinstance(value, (Value, ValueList)):
+            container[key] = Value(value, self._delimiter)
 
-    def _itemise_dict(self, dictionary):
+    def _wrap_list(self, item_list):
+        for n, value in enumerate(item_list):
+            self._wrap_container(item_list, n, value)
+
+    def _wrap_dict(self, dictionary):
         for key, value in dictionary.iteritems():
-            if isinstance(value, dict):
-                self._itemise_dict(value)
-            elif isinstance(value, list):
-                self._itemise_list(value)
-                dictionary[key] = Value(value, self._delimiter)
-            elif not isinstance(value, (Value, ValueList)):
-                dictionary[key] = Value(value, self._delimiter)
+            self._wrap_container(dictionary, key, value)
 
     def _update_value(self, cur, new, path):
         if cur is None:
@@ -203,9 +200,9 @@ class Parameters(object):
         """
 
         if isinstance(other, dict):
-            itemised_other = copy.deepcopy(other)
-            self._itemise_dict(itemised_other)
-            self._base = self._merge_recurse(self._base, itemised_other,
+            wrapped = copy.deepcopy(other)
+            self._wrap_dict(wrapped)
+            self._base = self._merge_recurse(self._base, wrapped,
                                              DictPath(self.delimiter), initmerge)
 
         elif isinstance(other, self.__class__):
@@ -219,62 +216,45 @@ class Parameters(object):
     def has_unresolved_refs(self):
         return len(self._unrendered) > 0
 
-    def resolve_simple(self, options=None):
+    def render_simple(self, options=None):
         if options is None:
             options = MergeOptions()
-        self._resolve_simple_recurse_dict(self._base, DictPath(self.delimiter), options)
+        self._render_simple_dict(self._base, DictPath(self.delimiter), options)
 
-    def _resolve_simple_recurse_dict(self, dictionary, path, options):
+    def _render_simple_container(self, container, key, value, path, options):
+            if isinstance(value, ValueList):
+                if value.has_references():
+                    self._unrendered[path.new_subpath(key)] = True
+                    return
+                else:
+                    value = value.merge(options)
+            if isinstance(value, Value) and value.is_container():
+                value = value.contents()
+            if isinstance(value, dict):
+                self._render_simple_dict(value, path.new_subpath(key), options)
+                container[key] = value
+            elif isinstance(value, list):
+                self._render_simple_list(value, path.new_subpath(key), options)
+                container[key] = value
+            elif isinstance(value, Value):
+                if value.has_references():
+                    self._unrendered[path.new_subpath(key)] = True
+                else:
+                    container[key] = value.render({}, options)
+
+    def _render_simple_dict(self, dictionary, path, options):
         for key, value in dictionary.iteritems():
-            if isinstance(value, ValueList):
-                if value.has_references():
-                    self._unrendered[path.new_subpath(key)] = True
-                    continue
-                else:
-                    value = value.merge(options)
-            if isinstance(value, Value) and value.is_container():
-                value = value.contents()
+            self._render_simple_container(dictionary, key, value, path, options)
 
-            if isinstance(value, dict):
-                self._resolve_simple_recurse_dict(value, path.new_subpath(key), options)
-                dictionary[key] = value
-            elif isinstance(value, list):
-                self._resolve_simple_recurse_list(value, path.new_subpath(key), options)
-                dictionary[key] = value
-            elif isinstance(value, Value):
-                if value.has_references():
-                    self._unrendered[path.new_subpath(key)] = True
-                else:
-                    dictionary[key] = value.render({}, options)
-
-    def _resolve_simple_recurse_list(self, item_list, path, options):
+    def _render_simple_list(self, item_list, path, options):
         for n, value in enumerate(item_list):
-            if isinstance(value, ValueList):
-                if value.has_references():
-                    self._unrendered[path.new_subpath(n)] = True
-                    continue
-                else:
-                    value = value.merge(options)
-            if isinstance(value, Value) and value.is_container():
-                value = value.contents()
-
-            if isinstance(value, dict):
-                self._resolve_simple_recurse_dict(value, path.new_subpath(n), options)
-                item_list[n] = value
-            elif isinstance(value, list):
-                self._resolve_simple_recurse_list(value, path.new_subpath(n), options)
-                item_list[n] = value
-            elif isinstance(value, Value):
-                if value.has_references():
-                    self._unrendered[path.new_subpath(n)] = True
-                else:
-                    item_list[n] = value.render({}, options)
+            self._render_simple_container(item_list, n, value, path, options)
 
     def interpolate(self, options=None):
         if options is None:
             options = MergeOptions()
         self._unrendered = {}
-        self.resolve_simple(options)
+        self.render_simple(options)
         while self.has_unresolved_refs():
             # we could use a view here, but this is simple enough:
             # _interpolate_inner removes references from the refs hash after
@@ -304,10 +284,10 @@ class Parameters(object):
             try:
                 new = value.render(self._base, options)
                 if isinstance(new, dict):
-                    self._resolve_simple_recurse_dict(new, path, options)
+                    self._render_simple_dict(new, path, options)
                     path.set_value(self._base, copy.deepcopy(new))
                 elif isinstance(new, list):
-                    self._resolve_simple_recurse_list(new, path, options)
+                    self._render_simple_list(new, path, options)
                     path.set_value(self._base, copy.deepcopy(new))
                 else:
                     path.set_value(self._base, new)
