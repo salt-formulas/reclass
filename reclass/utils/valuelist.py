@@ -6,7 +6,7 @@
 
 from reclass.utils.mergeoptions import MergeOptions
 
-class Values(object):
+class ValueList(object):
 
     def __init__(self, value=None):
         self._refs = []
@@ -83,4 +83,4 @@ class Values(object):
         return output
 
     def __repr__(self):
-        return 'Values(%r)' % self._values
+        return 'ValueList(%r)' % self._values

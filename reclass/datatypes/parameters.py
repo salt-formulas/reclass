@@ -15,7 +15,7 @@ from reclass.defaults import *
 from reclass.utils.mergeoptions import MergeOptions
 from reclass.utils.dictpath import DictPath
 from reclass.utils.value import Value
-from reclass.utils.values import Values
+from reclass.utils.valuelist import ValueList
 from reclass.errors import InfiniteRecursionError, UndefinedVariableError, InterpolationError
 
 class Parameters(object):
@@ -82,7 +82,7 @@ class Parameters(object):
                 self._itemise_dict(value)
             elif isinstance(value, list):
                 self._itemise_list(value)
-            elif not isinstance(value, (Value, Values)):
+            elif not isinstance(value, (Value, ValueList)):
                 item_list[n] = Value(value, self._delimiter)
 
     def _itemise_dict(self, dictionary):
@@ -92,7 +92,7 @@ class Parameters(object):
             elif isinstance(value, list):
                 self._itemise_list(value)
                 dictionary[key] = Value(value, self._delimiter)
-            elif not isinstance(value, (Value, Values)):
+            elif not isinstance(value, (Value, ValueList)):
                 dictionary[key] = Value(value, self._delimiter)
 
     def _update_value(self, cur, new, path):
@@ -101,16 +101,16 @@ class Parameters(object):
 
         values = cur
         if isinstance(cur, (dict, list)):
-            values = Values(Value(cur))
+            values = ValueList(Value(cur))
         elif isinstance(cur, Value):
-            values = Values(cur)
+            values = ValueList(cur)
 
         if isinstance(new, (dict, list)):
            new = Value(new)
 
         if isinstance(new, Value):
             values.append(new)
-        elif isinstance(new, Values):
+        elif isinstance(new, ValueList):
             values.extend(new)
         else:
             raise TypeError('Can not merge %r into %r' % (new, cur))
@@ -226,7 +226,7 @@ class Parameters(object):
 
     def _resolve_simple_recurse_dict(self, dictionary, path, options):
         for key, value in dictionary.iteritems():
-            if isinstance(value, Values):
+            if isinstance(value, ValueList):
                 if value.has_references():
                     self._unrendered[path.new_subpath(key)] = True
                     continue
@@ -249,7 +249,7 @@ class Parameters(object):
 
     def _resolve_simple_recurse_list(self, item_list, path, options):
         for n, value in enumerate(item_list):
-            if isinstance(value, Values):
+            if isinstance(value, ValueList):
                 if value.has_references():
                     self._unrendered[path.new_subpath(n)] = True
                     continue
