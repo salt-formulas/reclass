@@ -339,5 +339,6 @@ class TestParametersNoMock(unittest.TestCase):
         p1.merge(p2)
         p1.interpolate()
         self.assertEqual(p1.as_dict(), r)
+
 if __name__ == '__main__':
     unittest.main()

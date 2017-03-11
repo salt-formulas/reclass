@@ -6,8 +6,8 @@
 
 class DictItem(object):
 
-    def __init__(self, items):
-        self._items = items
+    def __init__(self, item):
+        self._dict = item
         self._refs = []
         self._allRefs = False
         self.assembleRefs()
@@ -15,7 +15,7 @@ class DictItem(object):
     def assembleRefs(self, context={}):
         self._refs = []
         self._allRefs = True
-        self._assembleRefs_recurse_dict(self._items)
+        self._assembleRefs_recurse_dict(self._dict)
 
     def _assembleRefs_recurse_dict(self, items):
         for key, item in items.iteritems():
@@ -29,7 +29,7 @@ class DictItem(object):
                     self._allRefs = False
 
     def contents(self):
-        return self._items
+        return self._dict
 
     def allRefs(self):
         return self._allRefs
@@ -51,10 +51,7 @@ class DictItem(object):
         raise TypeError('Cannot merge %s over %s' % (repr(self), repr(item)))
 
     def render(self, context):
-        value = {}
-        for key, item in self._items.iteritems():
-            value[key] = item
-        return value
+        return self._dict
 
     def __repr__(self):
-        return 'DictItem(%r)' % self._items
+        return 'DictItem(%r)' % self._dict

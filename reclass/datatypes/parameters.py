@@ -263,6 +263,12 @@ class Parameters(object):
             self._interpolate_inner(path, path.get_value(self._base), options)
 
     def _interpolate_inner(self, path, value, options):
+        if not isinstance(value, (Value, ValueList)):
+            # references to lists and dicts are only deepcopied when merged
+            # together so it's possible a value with references in a referenced
+            # list or dict has already been visited by _interpolate_inner
+            del self._unrendered[path]
+            return
         self._unrendered[path] = False  # mark as seen
         for ref in value.get_references():
             path_from_ref = DictPath(self.delimiter, ref)
@@ -285,12 +291,9 @@ class Parameters(object):
                 new = value.render(self._base, options)
                 if isinstance(new, dict):
                     self._render_simple_dict(new, path, options)
-                    path.set_value(self._base, copy.deepcopy(new))
                 elif isinstance(new, list):
                     self._render_simple_list(new, path, options)
-                    path.set_value(self._base, copy.deepcopy(new))
-                else:
-                    path.set_value(self._base, new)
+                path.set_value(self._base, new)
 
                 # remove the reference from the unrendered list
                 del self._unrendered[path]
