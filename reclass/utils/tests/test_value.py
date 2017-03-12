@@ -13,7 +13,7 @@ from reclass.utils.value import Value
 from reclass.defaults import PARAMETER_INTERPOLATION_SENTINELS, \
         PARAMETER_INTERPOLATION_DELIMITER
 from reclass.errors import UndefinedVariableError, \
-        IncompleteInterpolationError
+        IncompleteInterpolationError, ParseError
 import unittest
 
 def _var(s):
@@ -122,7 +122,7 @@ class TestValue(unittest.TestCase):
 
     def test_incomplete_variable(self):
         s = PARAMETER_INTERPOLATION_SENTINELS[0] + 'incomplete'
-        with self.assertRaises(pp.ParseException):
+        with self.assertRaises(ParseError):
             tv = Value(s)
 
 if __name__ == '__main__':

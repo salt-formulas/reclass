@@ -12,10 +12,23 @@ from reclass.utils.dictitem import DictItem
 from reclass.utils.listitem import ListItem
 from reclass.utils.refitem import RefItem
 from reclass.utils.scaitem import ScaItem
-from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER, PARAMETER_INTERPOLATION_SENTINELS
+from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER, PARAMETER_INTERPOLATION_SENTINELS, ESCAPE_CHARACTER
+from reclass.errors import *
+
 
 _STR = 'STR'
 _REF = 'REF'
+_OPEN = PARAMETER_INTERPOLATION_SENTINELS[0]
+_CLOSE = PARAMETER_INTERPOLATION_SENTINELS[1]
+_CLOSE_FIRST = _CLOSE[0]
+_ESCAPE = ESCAPE_CHARACTER
+_DOUBLE_ESCAPE = _ESCAPE + _ESCAPE
+_ESCAPE_OPEN = _ESCAPE + _OPEN
+_ESCAPE_CLOSE = _ESCAPE + _CLOSE
+_DOUBLE_ESCAPE_OPEN = _DOUBLE_ESCAPE + _OPEN
+_DOUBLE_ESCAPE_CLOSE = _DOUBLE_ESCAPE + _CLOSE
+_EXCLUDES = _ESCAPE + _OPEN + _CLOSE
+
 
 class Value(object):
 
@@ -29,23 +42,25 @@ class Value(object):
             token = list(tokens[0])
             tokens[0] = (_REF, token)
 
-        string = (pp.Literal('\\\\').setParseAction(pp.replaceWith('\\')) |
-                  pp.Literal('\\$').setParseAction(pp.replaceWith('$')) |
-                  pp.White() |
-                  pp.Word(pp.printables, excludeChars='\\$')).setParseAction(_string)
+        ref_open = pp.Literal(_OPEN).suppress()
+        ref_close = pp.Literal(_CLOSE).suppress()
+        not_open = ~pp.Literal(_OPEN) + ~pp.Literal(_ESCAPE_OPEN) + ~pp.Literal(_DOUBLE_ESCAPE_OPEN)
+        not_close = ~pp.Literal(_CLOSE) + ~pp.Literal(_ESCAPE_CLOSE) + ~pp.Literal(_DOUBLE_ESCAPE_CLOSE)
+        escape_open = pp.Literal(_ESCAPE_OPEN).setParseAction(pp.replaceWith(_OPEN))
+        escape_close = pp.Literal(_ESCAPE_CLOSE).setParseAction(pp.replaceWith(_CLOSE))
+        double_escape = pp.Combine(pp.Literal(_DOUBLE_ESCAPE) + pp.MatchFirst([pp.FollowedBy(_OPEN), pp.FollowedBy(_CLOSE)])).setParseAction(pp.replaceWith(_ESCAPE))
+        text = pp.MatchFirst([pp.Word(pp.printables, excludeChars=_EXCLUDES), pp.CharsNotIn('', exact=1)])
+        text_ref = pp.MatchFirst([pp.Word(pp.printables, excludeChars=_EXCLUDES), pp.CharsNotIn(_CLOSE_FIRST, exact=1)])
+        white_space = pp.White()
 
-        refString = (pp.Literal('\\\\').setParseAction(pp.replaceWith('\\')) |
-                     pp.Literal('\\$').setParseAction(pp.replaceWith('$')) |
-                     pp.Literal('\\{').setParseAction(pp.replaceWith('{')) |
-                     pp.Literal('\\}').setParseAction(pp.replaceWith('}')) |
-                     pp.White() |
-                     pp.Word(pp.printables, excludeChars='\\${}')).setParseAction(_string)
+        content = pp.Combine(pp.OneOrMore(not_open + text))
+        ref_content = pp.Combine(pp.OneOrMore(not_open + not_close + text_ref))
+        string = pp.MatchFirst([double_escape, escape_open, content, white_space]).setParseAction(_string)
+        refString = pp.MatchFirst([double_escape, escape_open, escape_close, ref_content, white_space]).setParseAction(_string)
 
         refItem = pp.Forward()
         refItems = pp.OneOrMore(refItem)
-        reference = (pp.Literal(PARAMETER_INTERPOLATION_SENTINELS[0]).suppress() +
-                     pp.Group(refItems) +
-                     pp.Literal(PARAMETER_INTERPOLATION_SENTINELS[1]).suppress()).setParseAction(_reference)
+        reference = (ref_open + pp.Group(refItems) + ref_close).setParseAction(_reference)
         refItem << (reference | refString)
 
         item = reference | string
@@ -60,7 +75,10 @@ class Value(object):
         self._allRefs = False
         self._container = False
         if isinstance(val, str):
-            tokens = Value._parser.leaveWhitespace().parseString(val).asList()
+            try:
+                tokens = Value._parser.leaveWhitespace().parseString(val).asList()
+            except pp.ParseException as e:
+                raise ParseError(e.msg, e.line, e.col, e.lineno)
             items = self._createItems(tokens)
             if len(items) is 1:
                 self._item = items[0]

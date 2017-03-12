@@ -214,3 +214,17 @@ class DuplicateNodeNameError(NameError):
               "definition in '{3}'. Nodes can only be defined once " \
               "per inventory."
         return msg.format(self._storage, self._name, self._uris[1], self._uris[0])
+
+
+class ParseError(ReclassException):
+
+    def __init__(self, msg, line, col, lineno, rc=posix.EX_DATAERR):
+        super(ParseError, self).__init__(rc=rc, msg=None)
+        self._err = msg
+        self._line = line
+        self._col = col
+        self._lineno = lineno
+
+    def _get_message(self):
+        msg = "Parse error: {0} : {1} at char {2}"
+        return msg.format(self._line, self._err, self._col - 1)

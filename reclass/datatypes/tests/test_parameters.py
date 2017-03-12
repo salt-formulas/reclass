@@ -7,7 +7,7 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 from reclass.datatypes import Parameters
-from reclass.defaults import PARAMETER_INTERPOLATION_SENTINELS
+from reclass.defaults import PARAMETER_INTERPOLATION_SENTINELS, ESCAPE_CHARACTER
 from reclass.errors import InfiniteRecursionError
 from reclass.utils.mergeoptions import MergeOptions
 import unittest
@@ -337,6 +337,53 @@ class TestParametersNoMock(unittest.TestCase):
         p2 = Parameters({'three': '${two}'})
         r = {'one': {'a': 1, 'b': 2}, 'two': {'c': 3, 'd': 4}, 'three': {'a': 1, 'b': 2, 'c': 3, 'd': 4}}
         p1.merge(p2)
+        p1.interpolate()
+        self.assertEqual(p1.as_dict(), r)
+
+    def test_interpolate_escaping(self):
+        v = 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS)
+        d = {'foo': ESCAPE_CHARACTER + 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),
+             'bar': 'unused'}
+        p = Parameters(d)
+        p.render_simple()
+        self.assertEqual(p.as_dict()['foo'], v)
+
+    def test_interpolate_double_escaping(self):
+        v = ESCAPE_CHARACTER + 'meep'
+        d = {'foo': ESCAPE_CHARACTER + ESCAPE_CHARACTER + 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),
+             'bar': 'meep'}
+        p = Parameters(d)
+        p.interpolate()
+        self.assertEqual(p.as_dict()['foo'], v)
+
+    def test_interpolate_escaping_backwards_compatibility(self):
+        """In all following cases, escaping should not happen and the escape character
+        needs to be printed as-is, to ensure backwards compatibility to older versions."""
+        v = ' '.join([
+            # Escape character followed by unescapable character
+            '1', ESCAPE_CHARACTER,
+            # Escape character followed by escape character
+            '2', ESCAPE_CHARACTER + ESCAPE_CHARACTER,
+            # Escape character followed by interpolation end sentinel
+            '3', ESCAPE_CHARACTER + PARAMETER_INTERPOLATION_SENTINELS[1],
+            # Escape character at the end of the string
+            '4', ESCAPE_CHARACTER
+            ])
+        d = {'foo': v}
+        p = Parameters(d)
+        p.render_simple()
+        self.assertEqual(p.as_dict()['foo'], v)
+
+    def test_escape_close_in_ref(self):
+        p1 = Parameters({'one}': 1, 'two': '${one\\}}'})
+        r = {'one}': 1, 'two': 1}
+        p1.interpolate()
+        self.assertEqual(p1.as_dict(), r)
+
+    def test_double_escape_in_ref(self):
+        d = {'one\\': 1, 'two': '${one\\\\}'}
+        p1 = Parameters(d)
+        r = {'one\\': 1, 'two': 1}
         p1.interpolate()
         self.assertEqual(p1.as_dict(), r)
 
