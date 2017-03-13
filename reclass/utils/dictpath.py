@@ -112,6 +112,15 @@ class DictPath(object):
     def _escape_string(self, string):
         return string.replace(self._delim, '\\' + self._delim)
 
+    def has_ancestors(self):
+        return len(self._parts) > 1
+
+    def key_parts(self):
+        if self.has_ancestors():
+            return self._parts[::len(self._parts)-1]
+        else:
+            return []
+
     def new_subpath(self, key):
         try:
             return DictPath(self._delim, self._parts + [self._escape_string(key)])

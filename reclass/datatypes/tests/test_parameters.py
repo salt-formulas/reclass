@@ -340,6 +340,12 @@ class TestParametersNoMock(unittest.TestCase):
         p1.interpolate()
         self.assertEqual(p1.as_dict(), r)
 
+    def test_deep_refs_in_referenced_dicts(self):
+        p = Parameters({'A': '${C:a}', 'B': {'a': 1, 'b': 2}, 'C': '${B}'})
+        r = {'A': 1, 'B': {'a': 1, 'b': 2}, 'C': {'a': 1, 'b': 2}}
+        p.interpolate()
+        self.assertEqual(p.as_dict(), r)
+
     def test_interpolate_escaping(self):
         v = 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS)
         d = {'foo': ESCAPE_CHARACTER + 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),

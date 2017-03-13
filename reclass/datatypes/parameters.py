@@ -260,9 +260,10 @@ class Parameters(object):
             # _interpolate_inner removes references from the refs hash after
             # processing them, so we cannot just iterate the dict
             path, value = self._unrendered.iteritems().next()
-            self._interpolate_inner(path, path.get_value(self._base), options)
+            self._interpolate_inner(path, options)
 
-    def _interpolate_inner(self, path, value, options):
+    def _interpolate_inner(self, path, options):
+        value = path.get_value(self._base)
         if not isinstance(value, (Value, ValueList)):
             # references to lists and dicts are only deepcopied when merged
             # together so it's possible a value with references in a referenced
@@ -282,8 +283,14 @@ class Parameters(object):
                     # faced with a cyclical reference.
                     raise InfiniteRecursionError(path, ref)
                 else:
-                    value_inner = path_from_ref.get_value(self._base)
-                    self._interpolate_inner(path_from_ref, value_inner, options)
+                    self._interpolate_inner(path_from_ref, options)
+            else:
+                # ensure ancestor keys are already dereferenced
+                ancestor = DictPath(self.delimiter)
+                for k in path_from_ref.key_parts():
+                    ancestor = ancestor.new_subpath(k)
+                    if ancestor in self._unrendered:
+                        self._interpolate_inner(ancestor, options)
 
         if value.allRefs():
             # all references have been deferenced so render value
@@ -307,6 +314,6 @@ class Parameters(object):
             old = len(value.get_references())
             value.assembleRefs(self._base)
             if old != len(value.get_references()):
-                self._interpolate_inner(path, value, options)
+                self._interpolate_inner(path, options)
             else:
                 raise InterpolationError('Bad reference count, path:' + repr(path))
