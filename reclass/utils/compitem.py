@@ -4,9 +4,6 @@
 # This file is part of reclass
 #
 
-from reclass.utils.mergeoptions import MergeOptions
-from reclass.utils.dictpath import DictPath
-from reclass.errors import UndefinedVariableError
 
 class CompItem(object):
 
@@ -19,7 +16,6 @@ class CompItem(object):
     def assembleRefs(self, context={}):
         self._refs = []
         self._allRefs = True
-        options = MergeOptions()
         for item in self._items:
             if item.has_references():
                 item.assembleRefs(context)

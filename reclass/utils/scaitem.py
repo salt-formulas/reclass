@@ -4,8 +4,8 @@
 # This file is part of reclass
 #
 
-import dictitem
-import listitem
+from reclass.utils.dictitem import DictItem
+from reclass.utils.listitem import ListItem
 
 class ScaItem(object):
 
@@ -30,12 +30,12 @@ class ScaItem(object):
     def merge_over(self, item, options):
         if isinstance(item, ScaItem):
             return self
-        elif isinstance(item, listitem.ListItem):
+        elif isinstance(item, ListItem):
             if options.allow_scalar_over_list:
                 return self
             else:
                 raise TypeError('allow scalar over list = False: cannot merge %s over %s' % (repr(self), repr(item)))
-        elif isinstance(item, dictitem.DictItem):
+        elif isinstance(item, DictItem):
             if options.allow_scalar_over_dict:
                 return self
             else:

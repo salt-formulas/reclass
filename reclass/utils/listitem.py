@@ -4,8 +4,6 @@
 # This file is part of reclass
 #
 
-import scaitem
-
 class ListItem(object):
 
     def __init__(self, item):
@@ -40,11 +38,13 @@ class ListItem(object):
         return self._list
 
     def merge_over(self, item, options):
+        from reclass.utils.scaitem import ScaItem
+
         if isinstance(item, ListItem):
             for i in self._list:
                 item._list.append(i)
             return item
-        elif isinstance(item, scaitem.ScaItem):
+        elif isinstance(item, ScaItem):
             if options.allow_list_over_scalar:
                 self._list.insert(0, item.contents())
                 return self

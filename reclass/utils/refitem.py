@@ -4,7 +4,6 @@
 # This file is part of reclass
 #
 
-from reclass.utils.mergeoptions import MergeOptions
 from reclass.utils.dictpath import DictPath
 from reclass.errors import UndefinedVariableError
 
