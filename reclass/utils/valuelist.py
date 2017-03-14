@@ -64,11 +64,11 @@ class ValueList(object):
         if options is None:
             options = MergeOptions()
         output = None
+        deepCopied = False
         for n, value in enumerate(self._values):
-            if n is 0:
-                output = self._values[0].render(context, options)
-                if isinstance(output, list):
-                    output = copy.deepcopy(output)
+            if output is None:
+                output = self._values[n].render(context, options)
+                deepCopied = False
             else:
                 new = value.render(context, options)
                 if isinstance(output, dict) and isinstance(new, dict):
@@ -78,6 +78,8 @@ class ValueList(object):
                     output = p1.as_dict()
                     continue
                 elif isinstance(output, list) and isinstance(new, list):
+                    if not deepCopied:
+                        output = copy.deepcopy(output)
                     output.extend(new)
                     continue
                 elif isinstance(output, (dict, list)) or isinstance(new, (dict, list)):

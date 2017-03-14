@@ -45,7 +45,9 @@ class ListItem(object):
                 item._list.append(i)
             return item
         elif isinstance(item, ScaItem):
-            if options.allow_list_over_scalar:
+            if item.contents() is None:
+                return self
+            elif options.allow_list_over_scalar:
                 self._list.insert(0, item.contents())
                 return self
             else:

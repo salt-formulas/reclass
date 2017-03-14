@@ -346,6 +346,14 @@ class TestParametersNoMock(unittest.TestCase):
         p.interpolate()
         self.assertEqual(p.as_dict(), r)
 
+    def test_overwrite_none(self):
+        p1 = Parameters({'A': None, 'B': None, 'C': None, 'D': None, 'E': None, 'F': None})
+        p2 = Parameters({'A': 'abc', 'B': [1, 2, 3], 'C': {'a': 'aaa', 'b': 'bbb'}, 'D': '${A}', 'E': '${B}', 'F': '${C}'})
+        r = {'A': 'abc', 'B': [1, 2, 3], 'C': {'a': 'aaa', 'b': 'bbb'}, 'D': 'abc', 'E': [1, 2, 3], 'F': {'a': 'aaa', 'b': 'bbb'}}
+        p1.merge(p2)
+        p1.interpolate()
+        self.assertEqual(p1.as_dict(), r)
+
     def test_interpolate_escaping(self):
         v = 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS)
         d = {'foo': ESCAPE_CHARACTER + 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),

@@ -44,7 +44,7 @@ class DictItem(object):
         from reclass.utils.scaitem import ScaItem
 
         if isinstance(item, ScaItem):
-            if options.allow_dict_over_scalar:
+            if item.contents() is None or options.allow_dict_over_scalar:
                 return self
             else:
                 raise TypeError('allow dict over scalar = False: cannot merge %s onto %s' % (repr(self), repr(item)))
