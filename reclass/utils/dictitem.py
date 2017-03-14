@@ -18,11 +18,14 @@ class DictItem(object):
         self._assembleRefs_recurse_dict(self._dict)
 
     def _assembleRefs_recurse_dict(self, items):
+        from reclass.utils.value import Value
+        from reclass.utils.valuelist import ValueList
+
         for key, item in items.iteritems():
             if isinstance(item, dict):
                 self._assembleRefs_recurse_dict(item)
                 continue
-            if item.has_references():
+            if isinstance(item, (Value, ValueList)) and item.has_references():
                 for ref in item.get_references():
                     self._refs.append(ref)
                 if not item.allRefs():

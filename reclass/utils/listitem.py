@@ -13,10 +13,13 @@ class ListItem(object):
         self.assembleRefs()
 
     def assembleRefs(self, context={}):
+        from reclass.utils.value import Value
+        from reclass.utils.valuelist import ValueList
+
         self._refs = []
         self._allRefs = True
         for item in self._list:
-            if item.has_references():
+            if isinstance(item, (Value, ValueList)) and item.has_references():
                 for ref in item.get_references():
                     self._refs.append(ref)
                 if not item.allRefs():
