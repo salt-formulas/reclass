@@ -13,8 +13,10 @@ import re
 import sys
 import fnmatch
 import shlex
+import string
 from reclass.datatypes import Entity, Classes, Parameters
 from reclass.errors import MappingFormatError, ClassNotFound
+from reclass.defaults import AUTOMATIC_RECLASS_PARAMETERS
 
 class Core(object):
 
@@ -129,6 +131,9 @@ class Core(object):
         base_entity = Entity(name='base')
         base_entity.merge(self._get_class_mappings_entity(node_entity.name))
         base_entity.merge(self._get_input_data_entity())
+        if AUTOMATIC_RECLASS_PARAMETERS:
+            params = { '_reclass_': { 'name': { 'full': nodename, 'short': string.split(nodename, '.')[0] } } }
+            base_entity.merge_parameters(params)
         seen = {}
         merge_base = self._recurse_entity(base_entity, seen=seen,
                                           nodename=base_entity.name)

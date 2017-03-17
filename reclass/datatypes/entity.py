@@ -29,6 +29,7 @@ class Entity(object):
         self._environment = environment or ''
 
     name = property(lambda s: s._name)
+    short_name = property(lambda s: s._short_name)
     uri = property(lambda s: s._uri)
     environment = property(lambda s: s._environment)
     classes = property(lambda s: s._classes)
@@ -60,6 +61,9 @@ class Entity(object):
         self._name = other.name
         self._uri = other.uri
         self._environment = other.environment
+
+    def merge_parameters(self, params):
+        self._parameters.merge(params)
 
     def interpolate(self):
         self._parameters.interpolate()
