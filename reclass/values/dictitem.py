@@ -4,7 +4,7 @@
 # This file is part of reclass
 #
 
-from reclass.utils.item import Item
+from item import Item
 
 class DictItem(Item):
 
@@ -15,7 +15,7 @@ class DictItem(Item):
         return self._dict
 
     def merge_over(self, item, options):
-        from reclass.utils.scaitem import ScaItem
+        from scaitem import ScaItem
 
         if isinstance(item, ScaItem):
             if item.contents() is None or options.allow_dict_over_scalar:

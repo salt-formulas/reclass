@@ -4,7 +4,7 @@
 # This file is part of reclass
 #
 
-from reclass.utils.item import Item
+from item import Item
 
 class ListItem(Item):
 
@@ -18,7 +18,7 @@ class ListItem(Item):
         return self._list
 
     def merge_over(self, item, options):
-        from reclass.utils.scaitem import ScaItem
+        from scaitem import ScaItem
 
         if isinstance(item, ListItem):
             for i in self._list:

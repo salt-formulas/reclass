@@ -7,6 +7,7 @@ exclude run_tests.py
 prune reclass/datatypes/tests
 prune reclass/storage/tests
 prune reclass/utils/tests
+prune reclass/values/tests
 # Exclude "source only" content
 prune doc
 prune examples

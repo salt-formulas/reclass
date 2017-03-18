@@ -4,11 +4,14 @@
 # This file is part of reclass
 #
 
-from reclass.utils.item import Item
+from item import Item
+from reclass.utils.dictpath import DictPath
+from reclass.errors import UndefinedVariableError
 
-class CompItem(Item):
+class RefItem(Item):
 
-    def __init__(self, items):
+    def __init__(self, items, delimiter):
+        self._delimiter = delimiter
         self._items = items
         self._refs = []
         self._allRefs = False
@@ -17,12 +20,17 @@ class CompItem(Item):
     def assembleRefs(self, context={}):
         self._refs = []
         self._allRefs = True
+        value = ''
         for item in self._items:
             if item.has_references():
                 item.assembleRefs(context)
                 self._refs.extend(item.get_references())
-                if item.allRefs() is False:
-                    self._allRefs = False
+            try:
+                value += str(item.render(context, None))
+            except UndefinedVariableError as e:
+                self._allRefs = False
+        if self._allRefs:
+            self._refs.append(value)
 
     def contents(self):
         return self._items
@@ -36,15 +44,20 @@ class CompItem(Item):
     def get_references(self):
         return self._refs
 
+    def _resolve(self, ref, context):
+        path = DictPath(self._delimiter, ref)
+        try:
+            return path.get_value(context)
+        except KeyError as e:
+            raise UndefinedVariableError(ref)
+
     def render(self, context, exports):
-        # Preserve type if only one item
         if len(self._items) == 1:
-            return self._items[0].render(context, exports)
-        # Multiple items
+            return self._resolve(self._items[0].render(context, exports), context)
         string = ''
         for item in self._items:
             string += str(item.render(context, exports))
-        return string
+        return self._resolve(string, context)
 
     def __repr__(self):
-        return 'CompItem(%r)' % self._items
+        return 'RefItem(%r)' % self._items

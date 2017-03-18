@@ -6,13 +6,13 @@
 
 import pyparsing as pp
 
-from reclass.utils.mergeoptions import MergeOptions
-from reclass.utils.compitem import CompItem
-from reclass.utils.dictitem import DictItem
-from reclass.utils.expitem import ExpItem
-from reclass.utils.listitem import ListItem
-from reclass.utils.refitem import RefItem
-from reclass.utils.scaitem import ScaItem
+from mergeoptions import MergeOptions
+from compitem import CompItem
+from dictitem import DictItem
+from expitem import ExpItem
+from listitem import ListItem
+from refitem import RefItem
+from scaitem import ScaItem
 from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER, ESCAPE_CHARACTER, REFERENCE_SENTINELS, EXPORT_SENTINELS
 from reclass.errors import *
 

@@ -6,7 +6,7 @@
 
 import copy
 
-from reclass.utils.mergeoptions import MergeOptions
+from mergeoptions import MergeOptions
 
 class ValueList(object):
 

@@ -12,10 +12,10 @@ import sys
 import types
 from collections import namedtuple
 from reclass.defaults import *
-from reclass.utils.mergeoptions import MergeOptions
 from reclass.utils.dictpath import DictPath
-from reclass.utils.value import Value
-from reclass.utils.valuelist import ValueList
+from reclass.values.mergeoptions import MergeOptions
+from reclass.values.value import Value
+from reclass.values.valuelist import ValueList
 from reclass.errors import InfiniteRecursionError, UndefinedVariableError, InterpolationError
 
 class Parameters(object):

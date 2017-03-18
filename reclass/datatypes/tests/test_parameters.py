@@ -9,7 +9,7 @@
 from reclass.datatypes import Parameters
 from reclass.defaults import REFERENCE_SENTINELS, ESCAPE_CHARACTER
 from reclass.errors import InfiniteRecursionError
-from reclass.utils.mergeoptions import MergeOptions
+from reclass.values.mergeoptions import MergeOptions
 import unittest
 try:
     import unittest.mock as mock

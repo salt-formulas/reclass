@@ -9,7 +9,7 @@
 
 import pyparsing as pp
 
-from reclass.utils.value import Value
+from reclass.values.value import Value
 from reclass.defaults import REFERENCE_SENTINELS, \
         PARAMETER_INTERPOLATION_DELIMITER
 from reclass.errors import UndefinedVariableError, \

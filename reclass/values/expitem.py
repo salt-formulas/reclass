@@ -4,8 +4,8 @@
 # This file is part of reclass
 #
 
+from item import Item
 from reclass.utils.dictpath import DictPath
-from reclass.utils.item import Item
 from reclass.errors import UndefinedVariableError
 
 class ExpItem(Item):
