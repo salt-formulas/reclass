@@ -102,12 +102,17 @@ class ExternalNodeStorage(NodeStorageBase):
     def get_exports(self):
         vvv('GET EXPORTS')
         path = os.path.join(self.exports_uri, 'exports{0}'.format(FILE_EXTENSION))
-        entity = YamlFile(path).get_data()
-        return entity
+        if os.path.exists(path):
+            data = YamlFile(path).get_data()
+        else:
+            data = dict()
+        return data
 
     def put_exports(self, new):
         vvv('PUT EXPORTS')
         path = os.path.join(self.exports_uri, 'exports{0}'.format(FILE_EXTENSION))
+        if not os.path.exists(self.exports_uri):
+            os.mkdir(self.exports_uri)
         with open(path, 'w') as yaml_file:
             yaml.dump(new.as_dict(), yaml_file, default_flow_style=False, Dumper=ExplicitDumper)
 
