@@ -49,7 +49,7 @@ class Parameters(object):
             delimiter = Parameters.DEFAULT_PATH_DELIMITER
         self._delimiter = delimiter
         self._base = {}
-        self._unrendered = {}
+        self._unrendered = None
         self._escapes_handled = {}
         if mapping is not None:
             # we initialise by merging, otherwise the list of references might
@@ -199,6 +199,7 @@ class Parameters(object):
 
         """
 
+        self._unrendered = None
         if isinstance(other, dict):
             wrapped = copy.deepcopy(other)
             self._wrap_dict(wrapped)
@@ -213,17 +214,15 @@ class Parameters(object):
             raise TypeError('Cannot merge %s objects into %s' % (type(other),
                             self.__class__.__name__))
 
-    def has_unresolved_refs(self):
-        return len(self._unrendered) > 0
-
     def render_simple(self, options=None):
         if options is None:
             options = MergeOptions()
+        self._unrendered = {}
         self._render_simple_dict(self._base, DictPath(self.delimiter), options)
 
     def _render_simple_container(self, container, key, value, path, options):
             if isinstance(value, ValueList):
-                if value.has_references():
+                if value.has_references() or value.has_exports():
                     self._unrendered[path.new_subpath(key)] = True
                     return
                 else:
@@ -237,10 +236,10 @@ class Parameters(object):
                 self._render_simple_list(value, path.new_subpath(key), options)
                 container[key] = value
             elif isinstance(value, Value):
-                if value.has_references():
+                if value.has_references() or value.has_exports():
                     self._unrendered[path.new_subpath(key)] = True
                 else:
-                    container[key] = value.render({}, options)
+                    container[key] = value.render(None, None, options)
 
     def _render_simple_dict(self, dictionary, path, options):
         for key, value in dictionary.iteritems():
@@ -250,19 +249,35 @@ class Parameters(object):
         for n, value in enumerate(item_list):
             self._render_simple_container(item_list, n, value, path, options)
 
-    def interpolate(self, options=None):
+    def _ensure_render_simple(self, options):
+        if self._unrendered is None:
+            self.render_simple(options)
+
+    def interpolate_from_external(self, external, options=None):
+        if self._unrendered is None:
+            options = MergeOptions()
+        self._ensure_render_simple(options)
+        external._ensure_render_simple(options)
+        while len(self._unrendered) > 0:
+            path, v = self._unrendered.iteritems().next()
+            value = path.get_value(self._base)
+            external._interpolate_references(path, value, None, options)
+            new = value.render(external._base, options)
+            path.set_value(self._base, new)
+            del self._unrendered[path]
+
+    def interpolate(self, exports=None, options=None):
         if options is None:
             options = MergeOptions()
-        self._unrendered = {}
-        self.render_simple(options)
-        while self.has_unresolved_refs():
+        self._ensure_render_simple(options)
+        while len(self._unrendered) > 0:
             # we could use a view here, but this is simple enough:
             # _interpolate_inner removes references from the refs hash after
             # processing them, so we cannot just iterate the dict
-            path, value = self._unrendered.iteritems().next()
-            self._interpolate_inner(path, options)
+            path, v = self._unrendered.iteritems().next()
+            self._interpolate_inner(path, exports, options)
 
-    def _interpolate_inner(self, path, options):
+    def _interpolate_inner(self, path, exports, options):
         value = path.get_value(self._base)
         if not isinstance(value, (Value, ValueList)):
             # references to lists and dicts are only deepcopied when merged
@@ -270,50 +285,55 @@ class Parameters(object):
             # list or dict has already been visited by _interpolate_inner
             del self._unrendered[path]
             return
-        self._unrendered[path] = False  # mark as seen
-        for ref in value.get_references():
-            path_from_ref = DictPath(self.delimiter, ref)
+        self._unrendered[path] = False
+        self._interpolate_references(path, value, exports, options)
+        new = self._interpolate_render_value(path, value, exports, options)
+        path.set_value(self._base, new)
+        del self._unrendered[path]
 
-            if path_from_ref in self._unrendered:
-                if self._unrendered[path_from_ref] is False:
-                    # every call to _interpolate_inner replaces the value of
-                    # self._unrendered[path] with False
-                    # Therefore, if we encounter False instead of True,
-                    # it means that we have already processed it and are now
-                    # faced with a cyclical reference.
-                    raise InfiniteRecursionError(path, ref)
+    def _interpolate_render_value(self, path, value, exports, options):
+        try:
+            new = value.render(self._base, exports, options)
+        except UndefinedVariableError as e:
+            raise UndefinedVariableError(e.var, path)
+
+        if isinstance(new, dict):
+            self._render_simple_dict(new, path, options)
+        elif isinstance(new, list):
+            self._render_simple_list(new, path, options)
+        return new
+
+    def _interpolate_references(self, path, value, exports, options):
+        all_refs = False
+        while not all_refs:
+            for ref in value.get_references():
+                path_from_ref = DictPath(self.delimiter, ref)
+
+                if path_from_ref in self._unrendered:
+                    if self._unrendered[path_from_ref] is False:
+                        # every call to _interpolate_inner replaces the value of
+                        # self._unrendered[path] with False
+                        # Therefore, if we encounter False instead of True,
+                        # it means that we have already processed it and are now
+                        # faced with a cyclical reference.
+                        raise InfiniteRecursionError(path, ref)
+                    else:
+                        self._interpolate_inner(path_from_ref, exports, options)
                 else:
-                    self._interpolate_inner(path_from_ref, options)
+                    # ensure ancestor keys are already dereferenced
+                    ancestor = DictPath(self.delimiter)
+                    for k in path_from_ref.key_parts():
+                        ancestor = ancestor.new_subpath(k)
+                        if ancestor in self._unrendered:
+                            self._interpolate_inner(ancestor, exports, options)
+            if value.allRefs():
+                all_refs = True
             else:
-                # ensure ancestor keys are already dereferenced
-                ancestor = DictPath(self.delimiter)
-                for k in path_from_ref.key_parts():
-                    ancestor = ancestor.new_subpath(k)
-                    if ancestor in self._unrendered:
-                        self._interpolate_inner(ancestor, options)
-
-        if value.allRefs():
-            # all references have been deferenced so render value
-            try:
-                new = value.render(self._base, options)
-                if isinstance(new, dict):
-                    self._render_simple_dict(new, path, options)
-                elif isinstance(new, list):
-                    self._render_simple_list(new, path, options)
-                path.set_value(self._base, new)
-
-                # remove the reference from the unrendered list
-                del self._unrendered[path]
-            except UndefinedVariableError as e:
-                raise UndefinedVariableError(e.var, path)
-        else:
-            # not all references in the value could be calculated previously so
-            # try recalculating references with current context and recursively
-            # call _interpolate_inner if the number of references has increased
-            # Otherwise raise an error
-            old = len(value.get_references())
-            value.assembleRefs(self._base)
-            if old != len(value.get_references()):
-                self._interpolate_inner(path, options)
-            else:
-                raise InterpolationError('Bad reference count, path:' + repr(path))
+                # not all references in the value could be calculated previously so
+                # try recalculating references with current context and recursively
+                # call _interpolate_inner if the number of references has increased
+                # Otherwise raise an error
+                old = len(value.get_references())
+                value.assembleRefs(self._base)
+                if old == len(value.get_references()):
+                    raise InterpolationError('Bad reference count, path:' + repr(path))

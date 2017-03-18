@@ -14,12 +14,11 @@ except ImportError:
     import mock
 
 @mock.patch.multiple('reclass.datatypes', autospec=True, Classes=mock.DEFAULT,
-                     Applications=mock.DEFAULT,
-                     Parameters=mock.DEFAULT)
+                     Applications=mock.DEFAULT, Parameters=mock.DEFAULT)
 class TestEntity(unittest.TestCase):
 
     def _make_instances(self, Classes, Applications, Parameters):
-        return Classes(), Applications(), Parameters()
+        return Classes(), Applications(), Parameters(), mock.MagicMock(spec=Parameters)
 
     def test_constructor_default(self, **mocks):
         # Actually test the real objects by calling the default constructor,
@@ -30,19 +29,22 @@ class TestEntity(unittest.TestCase):
         self.assertIsInstance(e.classes, Classes)
         self.assertIsInstance(e.applications, Applications)
         self.assertIsInstance(e.parameters, Parameters)
+        self.assertIsInstance(e.exports, Parameters)
 
     def test_constructor_empty(self, **types):
         instances = self._make_instances(**types)
         e = Entity(*instances)
         self.assertEqual(e.name, '')
         self.assertEqual(e.uri, '')
-        cl, al, pl = [getattr(i, '__len__') for i in instances]
+        cl, al, pl, ex = [getattr(i, '__len__') for i in instances]
         self.assertEqual(len(e.classes), cl.return_value)
         cl.assert_called_once_with()
         self.assertEqual(len(e.applications), al.return_value)
         al.assert_called_once_with()
         self.assertEqual(len(e.parameters), pl.return_value)
         pl.assert_called_once_with()
+        self.assertEqual(len(e.exports), pl.return_value)
+        ex.assert_called_once_with()
 
     def test_constructor_empty_named(self, **types):
         name = 'empty'
@@ -147,6 +149,7 @@ class TestEntity(unittest.TestCase):
         comp['classes'] = instances[0].as_list()
         comp['applications'] = instances[1].as_list()
         comp['parameters'] = instances[2].as_dict()
+        comp['exports'] = instances[3].as_dict()
         comp['environment'] = 'test'
         d = entity.as_dict()
         self.assertDictEqual(d, comp)

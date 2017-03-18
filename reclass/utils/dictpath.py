@@ -132,3 +132,20 @@ class DictPath(object):
 
     def set_value(self, base, value):
         self._get_innermost_container(base)[self._get_key()] = value
+
+    def drop_first(self):
+        del self._parts[0]
+
+    def exists_in(self, base):
+        container = base
+        for i in self._parts:
+            if isinstance(container, (dict, list)) and i in container:
+                if isinstance(container, dict):
+                    container = container[i]
+                elif isinstance(container, list):
+                    container = container[int(i)]
+            elif i == self._parts[-1]:
+                return True
+            else:
+                return False
+        return True

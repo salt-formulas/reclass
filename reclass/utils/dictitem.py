@@ -40,6 +40,9 @@ class DictItem(object):
     def has_references(self):
         return len(self._refs) > 0
 
+    def has_exports(self):
+        return False
+
     def get_references(self):
         return self._refs
 
@@ -53,7 +56,7 @@ class DictItem(object):
                 raise TypeError('allow dict over scalar = False: cannot merge %s onto %s' % (repr(self), repr(item)))
         raise TypeError('Cannot merge %s over %s' % (repr(self), repr(item)))
 
-    def render(self, context):
+    def render(self, context, exports):
         return self._dict
 
     def __repr__(self):

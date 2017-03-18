@@ -17,13 +17,15 @@ class Entity(object):
     uri of the Entity that is being merged.
     '''
     def __init__(self, classes=None, applications=None, parameters=None,
-                 uri=None, name=None, environment=None):
+                 exports=None, uri=None, name=None, environment=None):
         if classes is None: classes = Classes()
         self._set_classes(classes)
         if applications is None: applications = Applications()
         self._set_applications(applications)
         if parameters is None: parameters = Parameters()
+        if exports is None: exports = Parameters()
         self._set_parameters(parameters)
+        self._set_exports(exports)
         self._uri = uri or ''
         self._name = name or ''
         self._environment = environment or ''
@@ -35,6 +37,7 @@ class Entity(object):
     classes = property(lambda s: s._classes)
     applications = property(lambda s: s._applications)
     parameters = property(lambda s: s._parameters)
+    exports = property(lambda s: s._exports)
 
     def _set_classes(self, classes):
         if not isinstance(classes, Classes):
@@ -54,10 +57,17 @@ class Entity(object):
                             'instance of type %s' % type(parameters))
         self._parameters = parameters
 
+    def _set_exports(self, exports):
+        if not isinstance(exports, Parameters):
+            raise TypeError('Entity.exports cannot be set to '\
+                            'instance of type %s' % type(exports))
+        self._exports = exports
+
     def merge(self, other):
         self._classes.merge_unique(other._classes)
         self._applications.merge_unique(other._applications)
         self._parameters.merge(other._parameters)
+        self._exports.merge(other._exports)
         self._name = other.name
         self._uri = other.uri
         self._environment = other.environment
@@ -66,13 +76,15 @@ class Entity(object):
         self._parameters.merge(params)
 
     def interpolate(self):
-        self._parameters.interpolate()
+        self._exports.interpolate_from_external(self._parameters)
+        self._parameters.interpolate(exports={ self._name: self._exports.as_dict() })
 
     def __eq__(self, other):
         return isinstance(other, type(self)) \
                 and self._applications == other._applications \
                 and self._classes == other._classes \
                 and self._parameters == other._parameters \
+                and self._exports == other._exports \
                 and self._name == other._name \
                 and self._uri == other._uri
 
@@ -84,6 +96,7 @@ class Entity(object):
                                                     self.classes,
                                                     self.applications,
                                                     self.parameters,
+                                                    self.exports,
                                                     self.uri,
                                                     self.name)
 
@@ -91,5 +104,6 @@ class Entity(object):
         return {'classes': self._classes.as_list(),
                 'applications': self._applications.as_list(),
                 'parameters': self._parameters.as_dict(),
+                'exports': self._exports.as_dict(),
                 'environment': self._environment
                }

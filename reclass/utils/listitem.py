@@ -34,10 +34,13 @@ class ListItem(object):
     def has_references(self):
         return len(self._refs) > 0
 
+    def has_exports(self):
+        return False
+
     def get_references(self):
         return self._refs
 
-    def render(self, context):
+    def render(self, context, exports):
         return self._list
 
     def merge_over(self, item, options):

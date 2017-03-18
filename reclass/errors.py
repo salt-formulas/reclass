@@ -10,7 +10,7 @@
 import posix, sys
 import traceback
 
-from reclass.defaults import PARAMETER_INTERPOLATION_SENTINELS
+from reclass.defaults import REFERENCE_SENTINELS
 
 class ReclassException(Exception):
 
@@ -138,7 +138,7 @@ class UndefinedVariableError(InterpolationError):
     context = property(lambda self: self._context)
 
     def _get_message(self):
-        msg = "Cannot resolve " + self._var.join(PARAMETER_INTERPOLATION_SENTINELS)
+        msg = "Cannot resolve " + self._var.join(REFERENCE_SENTINELS)
         if self._context:
             msg += ' in the context of %s' % self._context
         return msg
@@ -151,7 +151,7 @@ class IncompleteInterpolationError(InterpolationError):
 
     def __init__(self, string, end_sentinel):
         super(IncompleteInterpolationError, self).__init__(msg=None)
-        self._ref = string.join(PARAMETER_INTERPOLATION_SENTINELS)
+        self._ref = string.join(REFERENCE_SENTINELS)
         self._end_sentinel = end_sentinel
 
     def _get_message(self):
@@ -164,7 +164,7 @@ class InfiniteRecursionError(InterpolationError):
     def __init__(self, path, ref):
         super(InfiniteRecursionError, self).__init__(msg=None)
         self._path = path
-        self._ref = ref.join(PARAMETER_INTERPOLATION_SENTINELS)
+        self._ref = ref.join(REFERENCE_SENTINELS)
 
     def _get_message(self):
         msg = "Infinite recursion while resolving {0} at {1}"

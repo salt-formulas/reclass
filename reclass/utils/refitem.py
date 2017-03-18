@@ -25,7 +25,7 @@ class RefItem(object):
                 item.assembleRefs(context)
                 self._refs.extend(item.get_references())
             try:
-                value += str(item.render(context))
+                value += str(item.render(context, None))
             except UndefinedVariableError as e:
                 self._allRefs = False
         if self._allRefs:
@@ -40,6 +40,9 @@ class RefItem(object):
     def has_references(self):
         return len(self._refs) > 0
 
+    def has_exports(self):
+        return False
+
     def get_references(self):
         return self._refs
 
@@ -50,14 +53,12 @@ class RefItem(object):
         except KeyError as e:
             raise UndefinedVariableError(ref)
 
-    def render(self, context):
-        # Preserve type if only one item
+    def render(self, context, exports):
         if len(self._items) == 1:
-            return self._resolve(self._items[0].render(context), context)
-        # Multiple items
+            return self._resolve(self._items[0].render(context, exports), context)
         string = ''
         for item in self._items:
-            string += str(item.render(context))
+            string += str(item.render(context, exports))
         return self._resolve(string, context)
 
     def __repr__(self):

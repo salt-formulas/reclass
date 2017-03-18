@@ -47,12 +47,17 @@ class YamlFile(object):
             parameters = {}
         parameters = datatypes.Parameters(parameters)
 
+        exports = self._data.get('exports')
+        if exports is None:
+            exports = {}
+        exports = datatypes.Parameters(exports)
+
         env = self._data.get('environment', default_environment)
 
         if name is None:
             name = self._path
 
-        return datatypes.Entity(classes, applications, parameters,
+        return datatypes.Entity(classes, applications, parameters, exports,
                                 name=name, environment=env,
                                 uri='yaml_fs://{0}'.format(self._path))
 

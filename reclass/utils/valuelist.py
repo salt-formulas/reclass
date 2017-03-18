@@ -17,6 +17,8 @@ class ValueList(object):
         if value is not None:
             self._values.append(value)
         self.assembleRefs()
+        self._has_exports = False
+        self._check_for_exports()
 
     def append(self, value):
         self._values.append(value)
@@ -31,11 +33,20 @@ class ValueList(object):
     def has_references(self):
         return len(self._refs) > 0
 
+    def has_exports(self):
+        return self._has_exports
+
     def get_references(self):
         return self._refs
 
     def allRefs(self):
         return self._allRefs
+
+    def _check_for_exports(self):
+        self._has_exports = False
+        for value in self._values:
+            if value.has_exports():
+                self._has_exports = True
 
     def assembleRefs(self, context={}):
         self._refs = []
@@ -58,7 +69,7 @@ class ValueList(object):
                 output = value.merge_over(output, options)
         return output
 
-    def render(self, context, options=None):
+    def render(self, context, exports, options=None):
         from reclass.datatypes.parameters import Parameters
 
         if options is None:
@@ -67,10 +78,10 @@ class ValueList(object):
         deepCopied = False
         for n, value in enumerate(self._values):
             if output is None:
-                output = self._values[n].render(context, options)
+                output = self._values[n].render(context, exports, options)
                 deepCopied = False
             else:
-                new = value.render(context, options)
+                new = value.render(context, exports, options)
                 if isinstance(output, dict) and isinstance(new, dict):
                     p1 = Parameters(output, value._delimiter)
                     p2 = Parameters(new, value._delimiter)

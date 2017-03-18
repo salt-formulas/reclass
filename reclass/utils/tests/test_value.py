@@ -10,15 +10,15 @@
 import pyparsing as pp
 
 from reclass.utils.value import Value
-from reclass.defaults import PARAMETER_INTERPOLATION_SENTINELS, \
+from reclass.defaults import REFERENCE_SENTINELS, \
         PARAMETER_INTERPOLATION_DELIMITER
 from reclass.errors import UndefinedVariableError, \
         IncompleteInterpolationError, ParseError
 import unittest
 
 def _var(s):
-    return '%s%s%s' % (PARAMETER_INTERPOLATION_SENTINELS[0], s,
-                       PARAMETER_INTERPOLATION_SENTINELS[1])
+    return '%s%s%s' % (REFERENCE_SENTINELS[0], s,
+                       REFERENCE_SENTINELS[1])
 
 CONTEXT = {'favcolour':'yellow',
            'motd':{'greeting':'Servus!',
@@ -39,12 +39,12 @@ class TestValue(unittest.TestCase):
         s = 'my cat likes to hide in boxes'
         tv = Value(s)
         self.assertFalse(tv.has_references())
-        self.assertEquals(tv.render(CONTEXT), s)
+        self.assertEquals(tv.render(CONTEXT, None), s)
 
     def _test_solo_ref(self, key):
         s = _var(key)
         tv = Value(s)
-        res = tv.render(CONTEXT)
+        res = tv.render(CONTEXT, None)
         self.assertTrue(tv.has_references())
         self.assertEqual(res, CONTEXT[key])
 
@@ -67,7 +67,7 @@ class TestValue(unittest.TestCase):
         s = 'I like ' + _var('favcolour') + ' and I like it'
         tv = Value(s)
         self.assertTrue(tv.has_references())
-        self.assertEqual(tv.render(CONTEXT),
+        self.assertEqual(tv.render(CONTEXT, None),
                          _poor_mans_template(s, 'favcolour',
                                              CONTEXT['favcolour']))
 
@@ -75,7 +75,7 @@ class TestValue(unittest.TestCase):
         s = _var('favcolour') + ' is my favourite colour'
         tv = Value(s)
         self.assertTrue(tv.has_references())
-        self.assertEqual(tv.render(CONTEXT),
+        self.assertEqual(tv.render(CONTEXT, None),
                          _poor_mans_template(s, 'favcolour',
                                              CONTEXT['favcolour']))
 
@@ -83,7 +83,7 @@ class TestValue(unittest.TestCase):
         s = 'I like ' + _var('favcolour')
         tv = Value(s)
         self.assertTrue(tv.has_references())
-        self.assertEqual(tv.render(CONTEXT),
+        self.assertEqual(tv.render(CONTEXT, None),
                          _poor_mans_template(s, 'favcolour',
                                              CONTEXT['favcolour']))
 
@@ -92,7 +92,7 @@ class TestValue(unittest.TestCase):
         s = _var(var)
         tv = Value(s)
         self.assertTrue(tv.has_references())
-        self.assertEqual(tv.render(CONTEXT),
+        self.assertEqual(tv.render(CONTEXT, None),
                          _poor_mans_template(s, var,
                                              CONTEXT['motd']['greeting']))
 
@@ -103,7 +103,7 @@ class TestValue(unittest.TestCase):
         self.assertTrue(tv.has_references())
         want = _poor_mans_template(s, greet, CONTEXT['motd']['greeting'])
         want = _poor_mans_template(want, 'favcolour', CONTEXT['favcolour'])
-        self.assertEqual(tv.render(CONTEXT), want)
+        self.assertEqual(tv.render(CONTEXT, None), want)
 
     def test_multiple_subst_flush(self):
         greet = PARAMETER_INTERPOLATION_DELIMITER.join(('motd', 'greeting'))
@@ -112,16 +112,16 @@ class TestValue(unittest.TestCase):
         self.assertTrue(tv.has_references())
         want = _poor_mans_template(s, greet, CONTEXT['motd']['greeting'])
         want = _poor_mans_template(want, 'favcolour', CONTEXT['favcolour'])
-        self.assertEqual(tv.render(CONTEXT), want)
+        self.assertEqual(tv.render(CONTEXT, None), want)
 
     def test_undefined_variable(self):
         s = _var('no_such_variable')
         tv = Value(s)
         with self.assertRaises(UndefinedVariableError):
-            tv.render(CONTEXT)
+            tv.render(CONTEXT, None)
 
     def test_incomplete_variable(self):
-        s = PARAMETER_INTERPOLATION_SENTINELS[0] + 'incomplete'
+        s = REFERENCE_SENTINELS[0] + 'incomplete'
         with self.assertRaises(ParseError):
             tv = Value(s)
 

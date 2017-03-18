@@ -7,7 +7,7 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 from reclass.datatypes import Parameters
-from reclass.defaults import PARAMETER_INTERPOLATION_SENTINELS, ESCAPE_CHARACTER
+from reclass.defaults import REFERENCE_SENTINELS, ESCAPE_CHARACTER
 from reclass.errors import InfiniteRecursionError
 from reclass.utils.mergeoptions import MergeOptions
 import unittest
@@ -234,7 +234,7 @@ class TestParametersNoMock(unittest.TestCase):
 
     def test_interpolate_single(self):
         v = 42
-        d = {'foo': 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),
+        d = {'foo': 'bar'.join(REFERENCE_SENTINELS),
              'bar': v}
         p = Parameters(d)
         p.interpolate()
@@ -242,7 +242,7 @@ class TestParametersNoMock(unittest.TestCase):
 
     def test_interpolate_multiple(self):
         v = '42'
-        d = {'foo': 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS) + 'meep'.join(PARAMETER_INTERPOLATION_SENTINELS),
+        d = {'foo': 'bar'.join(REFERENCE_SENTINELS) + 'meep'.join(REFERENCE_SENTINELS),
              'bar': v[0],
              'meep': v[1]}
         p = Parameters(d)
@@ -251,8 +251,8 @@ class TestParametersNoMock(unittest.TestCase):
 
     def test_interpolate_multilevel(self):
         v = 42
-        d = {'foo': 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),
-             'bar': 'meep'.join(PARAMETER_INTERPOLATION_SENTINELS),
+        d = {'foo': 'bar'.join(REFERENCE_SENTINELS),
+             'bar': 'meep'.join(REFERENCE_SENTINELS),
              'meep': v}
         p = Parameters(d)
         p.interpolate()
@@ -260,7 +260,7 @@ class TestParametersNoMock(unittest.TestCase):
 
     def test_interpolate_list(self):
         l = [41,42,43]
-        d = {'foo': 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),
+        d = {'foo': 'bar'.join(REFERENCE_SENTINELS),
              'bar': l}
         p = Parameters(d)
         p.interpolate()
@@ -268,8 +268,8 @@ class TestParametersNoMock(unittest.TestCase):
 
     def test_interpolate_infrecursion(self):
         v = 42
-        d = {'foo': 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),
-             'bar': 'foo'.join(PARAMETER_INTERPOLATION_SENTINELS)}
+        d = {'foo': 'bar'.join(REFERENCE_SENTINELS),
+             'bar': 'foo'.join(REFERENCE_SENTINELS)}
         p = Parameters(d)
         with self.assertRaises(InfiniteRecursionError):
             p.interpolate()
@@ -355,8 +355,8 @@ class TestParametersNoMock(unittest.TestCase):
         self.assertEqual(p1.as_dict(), r)
 
     def test_interpolate_escaping(self):
-        v = 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS)
-        d = {'foo': ESCAPE_CHARACTER + 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),
+        v = 'bar'.join(REFERENCE_SENTINELS)
+        d = {'foo': ESCAPE_CHARACTER + 'bar'.join(REFERENCE_SENTINELS),
              'bar': 'unused'}
         p = Parameters(d)
         p.render_simple()
@@ -364,7 +364,7 @@ class TestParametersNoMock(unittest.TestCase):
 
     def test_interpolate_double_escaping(self):
         v = ESCAPE_CHARACTER + 'meep'
-        d = {'foo': ESCAPE_CHARACTER + ESCAPE_CHARACTER + 'bar'.join(PARAMETER_INTERPOLATION_SENTINELS),
+        d = {'foo': ESCAPE_CHARACTER + ESCAPE_CHARACTER + 'bar'.join(REFERENCE_SENTINELS),
              'bar': 'meep'}
         p = Parameters(d)
         p.interpolate()
@@ -379,7 +379,7 @@ class TestParametersNoMock(unittest.TestCase):
             # Escape character followed by escape character
             '2', ESCAPE_CHARACTER + ESCAPE_CHARACTER,
             # Escape character followed by interpolation end sentinel
-            '3', ESCAPE_CHARACTER + PARAMETER_INTERPOLATION_SENTINELS[1],
+            '3', ESCAPE_CHARACTER + REFERENCE_SENTINELS[1],
             # Escape character at the end of the string
             '4', ESCAPE_CHARACTER
             ])
