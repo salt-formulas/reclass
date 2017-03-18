@@ -222,7 +222,7 @@ class Parameters(object):
 
     def _render_simple_container(self, container, key, value, path, options):
             if isinstance(value, ValueList):
-                if value.has_references() or value.has_exports():
+                if value.is_complex():
                     self._unrendered[path.new_subpath(key)] = True
                     return
                 else:
@@ -236,7 +236,7 @@ class Parameters(object):
                 self._render_simple_list(value, path.new_subpath(key), options)
                 container[key] = value
             elif isinstance(value, Value):
-                if value.has_references() or value.has_exports():
+                if value.is_complex():
                     self._unrendered[path.new_subpath(key)] = True
                 else:
                     container[key] = value.render(None, None, options)

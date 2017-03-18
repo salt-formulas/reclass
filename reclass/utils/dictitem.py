@@ -4,47 +4,15 @@
 # This file is part of reclass
 #
 
-class DictItem(object):
+from reclass.utils.item import Item
+
+class DictItem(Item):
 
     def __init__(self, item):
         self._dict = item
-        self._refs = []
-        self._allRefs = False
-        self.assembleRefs()
-
-    def assembleRefs(self, context={}):
-        self._refs = []
-        self._allRefs = True
-        self._assembleRefs_recurse_dict(self._dict)
-
-    def _assembleRefs_recurse_dict(self, items):
-        from reclass.utils.value import Value
-        from reclass.utils.valuelist import ValueList
-
-        for key, item in items.iteritems():
-            if isinstance(item, dict):
-                self._assembleRefs_recurse_dict(item)
-                continue
-            if isinstance(item, (Value, ValueList)) and item.has_references():
-                for ref in item.get_references():
-                    self._refs.append(ref)
-                if not item.allRefs():
-                    self._allRefs = False
 
     def contents(self):
         return self._dict
-
-    def allRefs(self):
-        return self._allRefs
-
-    def has_references(self):
-        return len(self._refs) > 0
-
-    def has_exports(self):
-        return False
-
-    def get_references(self):
-        return self._refs
 
     def merge_over(self, item, options):
         from reclass.utils.scaitem import ScaItem

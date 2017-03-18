@@ -5,9 +5,10 @@
 #
 
 from reclass.utils.dictpath import DictPath
+from reclass.utils.item import Item
 from reclass.errors import UndefinedVariableError
 
-class RefItem(object):
+class RefItem(Item):
 
     def __init__(self, items, delimiter):
         self._delimiter = delimiter
@@ -39,9 +40,6 @@ class RefItem(object):
 
     def has_references(self):
         return len(self._refs) > 0
-
-    def has_exports(self):
-        return False
 
     def get_references(self):
         return self._refs

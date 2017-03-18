@@ -5,9 +5,10 @@
 #
 
 from reclass.utils.dictpath import DictPath
+from reclass.utils.item import Item
 from reclass.errors import UndefinedVariableError
 
-class ExpItem(object):
+class ExpItem(Item):
 
     def __init__(self, items, delimiter):
         self._delimiter = delimiter
@@ -15,9 +16,6 @@ class ExpItem(object):
 
     def contents(self):
         return self._items
-
-    def has_references(self):
-        return False
 
     def has_exports(self):
         return True

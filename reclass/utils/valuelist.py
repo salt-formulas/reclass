@@ -36,6 +36,9 @@ class ValueList(object):
     def has_exports(self):
         return self._has_exports
 
+    def is_complex(self):
+        return (self.has_references() | self.has_exports())
+
     def get_references(self):
         return self._refs
 

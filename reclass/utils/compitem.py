@@ -4,8 +4,9 @@
 # This file is part of reclass
 #
 
+from reclass.utils.item import Item
 
-class CompItem(object):
+class CompItem(Item):
 
     def __init__(self, items):
         self._items = items
@@ -34,9 +35,6 @@ class CompItem(object):
 
     def get_references(self):
         return self._refs
-
-    def has_exports(self):
-        return False
 
     def render(self, context, exports):
         # Preserve type if only one item

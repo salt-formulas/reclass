@@ -4,41 +4,15 @@
 # This file is part of reclass
 #
 
-class ListItem(object):
+from reclass.utils.item import Item
+
+class ListItem(Item):
 
     def __init__(self, item):
         self._list = item
-        self._refs = []
-        self._allRefs = False
-        self.assembleRefs()
-
-    def assembleRefs(self, context={}):
-        from reclass.utils.value import Value
-        from reclass.utils.valuelist import ValueList
-
-        self._refs = []
-        self._allRefs = True
-        for item in self._list:
-            if isinstance(item, (Value, ValueList)) and item.has_references():
-                for ref in item.get_references():
-                    self._refs.append(ref)
-                if not item.allRefs():
-                    self._allRefs = False
 
     def contents(self):
         return self._list
-
-    def allRefs(self):
-        return self._allRefs
-
-    def has_references(self):
-        return len(self._refs) > 0
-
-    def has_exports(self):
-        return False
-
-    def get_references(self):
-        return self._refs
 
     def render(self, context, exports):
         return self._list
