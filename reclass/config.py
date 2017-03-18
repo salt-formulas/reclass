@@ -28,7 +28,10 @@ def make_db_options_group(parser, defaults={}):
                    help='the URI to the nodes storage [%default]'),
     ret.add_option('-c', '--classes-uri', dest='classes_uri',
                    default=defaults.get('classes_uri', OPT_CLASSES_URI),
-                   help='the URI to the classes storage [%default]')
+                   help='the URI to the classes storage [%default]'),
+    ret.add_option('-e', '--exports-uri', dest='exports_uri',
+                   default=defaults.get('exports_uri', OPT_EXPORTS_URI),
+                   help='the URI to the exports file [%default]')
     ret.add_option('-z', '--ignore-class-notfound', dest='ignore_class_notfound',
                    default=defaults.get('ignore_class_notfound', OPT_IGNORE_CLASS_NOTFOUND),
                    help='decision for not found classes [%default]')
@@ -133,11 +136,13 @@ def make_parser_and_checker(name, version, description,
             parser.error('Must specify --inventory-base-uri or --nodes-uri')
         elif options.inventory_base_uri is None and options.classes_uri is None:
             parser.error('Must specify --inventory-base-uri or --classes-uri')
+        elif options.inventory_base_uri is None and options.exports_uri is None:
+            parser.error('Must specify --inventory-base-uri or --exports-uri')
 
     return parser, option_checker
 
 
-def path_mangler(inventory_base_uri, nodes_uri, classes_uri):
+def path_mangler(inventory_base_uri, nodes_uri, classes_uri, exports_uri):
 
     if inventory_base_uri is None:
         # if inventory_base is not given, default to current directory
@@ -145,20 +150,21 @@ def path_mangler(inventory_base_uri, nodes_uri, classes_uri):
 
     nodes_uri = nodes_uri or 'nodes'
     classes_uri = classes_uri or 'classes'
+    exports_uri = exports_uri or 'exports'
 
     def _path_mangler_inner(path):
         ret = os.path.join(inventory_base_uri, path)
         ret = os.path.expanduser(ret)
         return os.path.abspath(ret)
 
-    n, c = map(_path_mangler_inner, (nodes_uri, classes_uri))
-    if n == c:
-        raise errors.DuplicateUriError(n, c)
+    n, c, e = map(_path_mangler_inner, (nodes_uri, classes_uri, exports_uri))
+    if n == c or n == e or c == e:
+        raise errors.DuplicateUriError(n, c, e)
     common = os.path.commonprefix((n, c))
     if common == n or common == c:
         raise errors.UriOverlapError(n, c)
 
-    return n, c
+    return n, c, e
 
 
 def get_options(name, version, description,
@@ -184,9 +190,9 @@ def get_options(name, version, description,
     options, args = parser.parse_args()
     checker(options, args)
 
-    options.nodes_uri, options.classes_uri = \
+    options.nodes_uri, options.classes_uri, options.exports_uri  = \
             path_mangler(options.inventory_base_uri, options.nodes_uri,
-                         options.classes_uri)
+                         options.classes_uri, options.exports_uri)
 
     return options
 

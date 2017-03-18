@@ -7,6 +7,7 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 
+import copy
 import time
 #import types
 import re
@@ -14,6 +15,8 @@ import sys
 import fnmatch
 import shlex
 import string
+import yaml
+from reclass.output.yaml_outputter import ExplicitDumper
 from reclass.datatypes import Entity, Classes, Parameters
 from reclass.errors import MappingFormatError, ClassNotFound
 from reclass.defaults import AUTOMATIC_RECLASS_PARAMETERS
@@ -126,20 +129,25 @@ class Core(object):
         merge_base.merge(entity)
         return merge_base
 
-    def _nodeinfo(self, nodename):
+    def _get_automatic_parameters(self, nodename):
+        if AUTOMATIC_RECLASS_PARAMETERS:
+            return Parameters({ '_reclass_': { 'name': { 'full': nodename, 'short': string.split(nodename, '.')[0] } } })
+        else:
+            return Parameters()
+
+
+    def _nodeinfo(self, nodename, exports):
         node_entity = self._storage.get_node(nodename)
         base_entity = Entity(name='base')
         base_entity.merge(self._get_class_mappings_entity(node_entity.name))
         base_entity.merge(self._get_input_data_entity())
-        if AUTOMATIC_RECLASS_PARAMETERS:
-            params = { '_reclass_': { 'name': { 'full': nodename, 'short': string.split(nodename, '.')[0] } } }
-            base_entity.merge_parameters(params)
+        base_entity.merge_parameters(self._get_automatic_parameters(nodename))
         seen = {}
         merge_base = self._recurse_entity(base_entity, seen=seen,
                                           nodename=base_entity.name)
         ret = self._recurse_entity(node_entity, merge_base, seen=seen,
                                    nodename=node_entity.name)
-        ret.interpolate()
+        ret.interpolate(nodename, exports)
         return ret
 
     def _nodeinfo_as_dict(self, nodename, entity):
@@ -152,13 +160,28 @@ class Core(object):
         ret.update(entity.as_dict())
         return ret
 
+    def _update_exports(self, old, new):
+        old_yaml = yaml.dump(old.as_dict(), default_flow_style=True, Dumper=ExplicitDumper)
+        new_yaml = yaml.dump(new.as_dict(), default_flow_style=True, Dumper=ExplicitDumper)
+        if old_yaml != new_yaml:
+            self._storage.put_exports(new)
+
     def nodeinfo(self, nodename):
-        return self._nodeinfo_as_dict(nodename, self._nodeinfo(nodename))
+        original_exports = Parameters(self._storage.get_exports())
+        exports = copy.deepcopy(original_exports)
+        original_exports.render_simple()
+        ret = self._nodeinfo_as_dict(nodename, self._nodeinfo(nodename, exports))
+        self._update_exports(original_exports, exports)
+        return ret
 
     def inventory(self):
+        original_exports = Parameters(self._storage.get_exports())
+        exports = copy.deepcopy(original_exports)
+        original_exports.render_simple()
         entities = {}
         for n in self._storage.enumerate_nodes():
-            entities[n] = self._nodeinfo(n)
+            entities[n] = self._nodeinfo(n, exports)
+        self._update_exports(original_exports, exports)
 
         nodes = {}
         applications = {}

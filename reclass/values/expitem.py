@@ -4,9 +4,12 @@
 # This file is part of reclass
 #
 
+import copy
+
 from item import Item
 from reclass.utils.dictpath import DictPath
 from reclass.errors import UndefinedVariableError
+from reclass.defaults import AUTOMATIC_EXPORT_PARAMETERS
 
 class ExpItem(Item):
 
@@ -41,7 +44,10 @@ class ExpItem(Item):
         exp_path.drop_first()
         for node, items in exports.iteritems():
             if exp_path.exists_in(items):
-                result.append(self._resolve(exp_path, exp_key, items))
+                value = copy.deepcopy(self._resolve(exp_path, exp_key, items))
+                if isinstance(value, dict) and AUTOMATIC_EXPORT_PARAMETERS:
+                    value['_node_'] = node
+                result.append(value)
         return result
 
     def __repr__(self):

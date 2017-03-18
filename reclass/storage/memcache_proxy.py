@@ -14,7 +14,7 @@ STORAGE_NAME = 'memcache_proxy'
 class MemcacheProxy(NodeStorageBase):
 
     def __init__(self, real_storage, cache_classes=True, cache_nodes=True,
-                 cache_nodelist=True):
+                 cache_nodelist=True, cache_exports=True):
         name = '{0}({1})'.format(STORAGE_NAME, real_storage.name)
         super(MemcacheProxy, self).__init__(name)
         self._real_storage = real_storage
@@ -27,6 +27,9 @@ class MemcacheProxy(NodeStorageBase):
         self._cache_nodelist = cache_nodelist
         if cache_nodelist:
             self._nodelist_cache = None
+        self._cache_exports = cache_exports
+        if cache_exports:
+            self._exports_cache = None
 
     name = property(lambda self: self._real_storage.name)
 
@@ -41,6 +44,12 @@ class MemcacheProxy(NodeStorageBase):
 
         return ret
 
+    @staticmethod
+    def _cache(cache, getter):
+        if cache is None:
+            cache = getter()
+        return cache
+
     def get_node(self, name):
         if not self._cache_nodes:
             return self._real_storage.get_node(name)
@@ -54,6 +63,14 @@ class MemcacheProxy(NodeStorageBase):
 
         return MemcacheProxy._cache_proxy(name, self._classes_cache,
                                           self._real_storage.get_class)
+
+    def get_exports(self):
+        if not self._cache_exports:
+             return self._real_storage.get_exports()
+        return MemcacheProxy._cache(self._exports_cache, self._real_storage.get_exports)
+
+    def put_exports(self, new):
+        self._real_storage.put_exports(new)
 
     def enumerate_nodes(self):
         if not self._cache_nodelist:

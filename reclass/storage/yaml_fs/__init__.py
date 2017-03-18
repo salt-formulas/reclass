@@ -8,6 +8,8 @@
 #
 import os, sys
 import fnmatch
+import yaml
+from reclass.output.yaml_outputter import ExplicitDumper
 from reclass.storage import NodeStorageBase
 from yamlfile import YamlFile
 from directory import Directory
@@ -23,7 +25,7 @@ def vvv(msg):
 
 class ExternalNodeStorage(NodeStorageBase):
 
-    def __init__(self, nodes_uri, classes_uri, default_environment=None):
+    def __init__(self, nodes_uri, classes_uri, exports_uri, default_environment=None):
         super(ExternalNodeStorage, self).__init__(STORAGE_NAME)
 
         def name_mangler(relpath, name):
@@ -47,11 +49,12 @@ class ExternalNodeStorage(NodeStorageBase):
             return relpath, '.'.join(parts)
         self._classes_uri = classes_uri
         self._classes = self._enumerate_inventory(classes_uri, name_mangler)
-
+        self._exports_uri = exports_uri
         self._default_environment = default_environment
 
     nodes_uri = property(lambda self: self._nodes_uri)
     classes_uri = property(lambda self: self._classes_uri)
+    exports_uri = property(lambda self: self._exports_uri)
 
     def _enumerate_inventory(self, basedir, name_mangler):
         ret = {}
@@ -95,6 +98,18 @@ class ExternalNodeStorage(NodeStorageBase):
             raise reclass.errors.ClassNotFound(self.name, name, self.classes_uri)
         entity = YamlFile(path).get_entity(name)
         return entity
+
+    def get_exports(self):
+        vvv('GET EXPORTS')
+        path = os.path.join(self.exports_uri, 'exports{0}'.format(FILE_EXTENSION))
+        entity = YamlFile(path).get_data()
+        return entity
+
+    def put_exports(self, new):
+        vvv('PUT EXPORTS')
+        path = os.path.join(self.exports_uri, 'exports{0}'.format(FILE_EXTENSION))
+        with open(path, 'w') as yaml_file:
+            yaml.dump(new.as_dict(), yaml_file, default_flow_style=False, Dumper=ExplicitDumper)
 
     def enumerate_nodes(self):
         return self._nodes.keys()

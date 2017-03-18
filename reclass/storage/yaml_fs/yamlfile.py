@@ -31,6 +31,9 @@ class YamlFile(object):
             self._data = data
         fp.close()
 
+    def get_data(self):
+        return self._data
+
     def get_entity(self, name=None, default_environment=None):
         classes = self._data.get('classes')
         if classes is None:
@@ -52,10 +55,10 @@ class YamlFile(object):
             exports = {}
         exports = datatypes.Parameters(exports)
 
-        env = self._data.get('environment', default_environment)
-
         if name is None:
             name = self._path
+
+        env = self._data.get('environment', default_environment)
 
         return datatypes.Entity(classes, applications, parameters, exports,
                                 name=name, environment=env,

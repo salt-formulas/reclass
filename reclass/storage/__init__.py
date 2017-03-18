@@ -22,6 +22,14 @@ class NodeStorageBase(object):
         msg = "Storage class '{0}' does not implement class entity retrieval."
         raise NotImplementedError(msg.format(self.name))
 
+    def get_exports(self):
+        msg = "Storage class '{0}' does not implement get_exports."
+        raise NotImplementedError(msg.format(self.name))
+
+    def put_exports(self, new):
+        msg = "Storage class '{0}' does not implement put_exports."
+        raise NotImplementedError(msg.format(self.name))
+
     def enumerate_nodes(self):
         msg = "Storage class '{0}' does not implement node enumeration."
         raise NotImplementedError(msg.format(self.name))

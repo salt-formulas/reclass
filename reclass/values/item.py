@@ -23,3 +23,15 @@ class Item(object):
 
     def is_complex():
         return (self.has_references | self.has_exports)
+
+    def contents(self):
+        msg = "Item class {0} does not implement contents()"
+        raise NotImplementedError(msg.format(self.__class__.__name__))
+
+    def merge_over(self, item, options):
+        msg = "Item class {0} does not implement merge_over()"
+        raise NotImplementedError(msg.format(self.__class__.__name__))
+
+    def render(self, context, exports):
+        msg = "Item class {0} does not implement render()"
+        raise NotImplementedError(msg.format(self.__class__.__name__))

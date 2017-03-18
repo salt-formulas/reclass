@@ -75,9 +75,11 @@ class Entity(object):
     def merge_parameters(self, params):
         self._parameters.merge(params)
 
-    def interpolate(self):
+    def interpolate(self, nodename, exports):
         self._exports.interpolate_from_external(self._parameters)
-        self._parameters.interpolate(exports={ self._name: self._exports.as_dict() })
+        exports.merge({ nodename: self._exports.as_dict() })
+        exports.render_simple()
+        self._parameters.interpolate(exports=exports.as_dict())
 
     def __eq__(self, other):
         return isinstance(other, type(self)) \
@@ -92,7 +94,7 @@ class Entity(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "%s(%r, %r, %r, uri=%r, name=%r)" % (self.__class__.__name__,
+        return "%s(%r, %r, %r, %r, uri=%r, name=%r)" % (self.__class__.__name__,
                                                     self.classes,
                                                     self.applications,
                                                     self.parameters,
