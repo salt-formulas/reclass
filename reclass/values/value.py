@@ -138,7 +138,10 @@ class Value(object):
         items = []
         for token in tokens:
             items.append(ScaItem(token[1]))
-        return ExpItem(items, self._delimiter)
+        if len(items) == 1:
+            return ExpItem(items[0], self._delimiter)
+        else:
+            return ExpItem(CompItem(items), self_delimiter)
 
     def _createItems(self, tokens):
         items = []
