@@ -228,3 +228,8 @@ class ParseError(ReclassException):
     def _get_message(self):
         msg = "Parse error: {0} : {1} at char {2}"
         return msg.format(self._line, self._err, self._col - 1)
+
+class ExpressionError(ReclassException):
+
+    def __init__(self, msg, rc=posix.EX_DATAERR):
+        super(ExpressionError, self).__init__(rc=rc, msg=msg)

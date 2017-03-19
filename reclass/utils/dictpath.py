@@ -135,6 +135,7 @@ class DictPath(object):
 
     def drop_first(self):
         del self._parts[0]
+        return self
 
     def exists_in(self, base):
         container = base

@@ -16,38 +16,13 @@ from scaitem import ScaItem
 from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER, ESCAPE_CHARACTER, REFERENCE_SENTINELS, EXPORT_SENTINELS
 from reclass.errors import *
 
-
 _STR = 'STR'
 _REF = 'REF'
 _EXP = 'EXP'
 
-_ESCAPE = ESCAPE_CHARACTER
-_DOUBLE_ESCAPE = _ESCAPE + _ESCAPE
-
-_REF_OPEN = REFERENCE_SENTINELS[0]
-_REF_CLOSE = REFERENCE_SENTINELS[1]
-_REF_CLOSE_FIRST = _REF_CLOSE[0]
-_REF_ESCAPE_OPEN = _ESCAPE + _REF_OPEN
-_REF_ESCAPE_CLOSE = _ESCAPE + _REF_CLOSE
-_REF_DOUBLE_ESCAPE_OPEN = _DOUBLE_ESCAPE + _REF_OPEN
-_REF_DOUBLE_ESCAPE_CLOSE = _DOUBLE_ESCAPE + _REF_CLOSE
-_REF_EXCLUDES = _ESCAPE + _REF_OPEN + _REF_CLOSE
-
-_EXP_OPEN = EXPORT_SENTINELS[0]
-_EXP_CLOSE = EXPORT_SENTINELS[1]
-_EXP_CLOSE_FIRST = _EXP_CLOSE[0]
-_EXP_ESCAPE_OPEN = _ESCAPE + _EXP_OPEN
-_EXP_ESCAPE_CLOSE = _ESCAPE + _EXP_CLOSE
-_EXP_DOUBLE_ESCAPE_OPEN = _DOUBLE_ESCAPE + _EXP_OPEN
-_EXP_DOUBLE_ESCAPE_CLOSE = _DOUBLE_ESCAPE + _EXP_CLOSE
-_EXP_EXCLUDES = _ESCAPE + _EXP_OPEN + _EXP_CLOSE
-
-_EXCLUDES = _ESCAPE + _REF_OPEN + _REF_CLOSE + _EXP_OPEN + _EXP_CLOSE
-
-
 class Value(object):
 
-    def _getParser():
+    def _get_parser():
 
         def _string(string, location, tokens):
             token = tokens[0]
@@ -60,6 +35,29 @@ class Value(object):
         def _export(string, location, tokens):
             token = list(tokens[0])
             tokens[0] = (_EXP, token)
+
+        _ESCAPE = ESCAPE_CHARACTER
+        _DOUBLE_ESCAPE = _ESCAPE + _ESCAPE
+
+        _REF_OPEN = REFERENCE_SENTINELS[0]
+        _REF_CLOSE = REFERENCE_SENTINELS[1]
+        _REF_CLOSE_FIRST = _REF_CLOSE[0]
+        _REF_ESCAPE_OPEN = _ESCAPE + _REF_OPEN
+        _REF_ESCAPE_CLOSE = _ESCAPE + _REF_CLOSE
+        _REF_DOUBLE_ESCAPE_OPEN = _DOUBLE_ESCAPE + _REF_OPEN
+        _REF_DOUBLE_ESCAPE_CLOSE = _DOUBLE_ESCAPE + _REF_CLOSE
+        _REF_EXCLUDES = _ESCAPE + _REF_OPEN + _REF_CLOSE
+
+        _EXP_OPEN = EXPORT_SENTINELS[0]
+        _EXP_CLOSE = EXPORT_SENTINELS[1]
+        _EXP_CLOSE_FIRST = _EXP_CLOSE[0]
+        _EXP_ESCAPE_OPEN = _ESCAPE + _EXP_OPEN
+        _EXP_ESCAPE_CLOSE = _ESCAPE + _EXP_CLOSE
+        _EXP_DOUBLE_ESCAPE_OPEN = _DOUBLE_ESCAPE + _EXP_OPEN
+        _EXP_DOUBLE_ESCAPE_CLOSE = _DOUBLE_ESCAPE + _EXP_CLOSE
+        _EXP_EXCLUDES = _ESCAPE + _EXP_OPEN + _EXP_CLOSE
+
+        _EXCLUDES = _ESCAPE + _REF_OPEN + _REF_CLOSE + _EXP_OPEN + _EXP_CLOSE
 
         white_space = pp.White()
         double_escape = pp.Combine(pp.Literal(_DOUBLE_ESCAPE) + pp.MatchFirst([pp.FollowedBy(_REF_OPEN), pp.FollowedBy(_REF_CLOSE)])).setParseAction(pp.replaceWith(_ESCAPE))
@@ -98,7 +96,7 @@ class Value(object):
         line = pp.OneOrMore(item) + pp.StringEnd()
         return line
 
-    _parser = _getParser()
+    _parser = _get_parser()
 
     def __init__(self, val, delimiter=PARAMETER_INTERPOLATION_DELIMITER):
         self._delimiter = delimiter
