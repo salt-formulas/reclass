@@ -82,8 +82,8 @@ class Value(object):
         exp_not_close = ~pp.Literal(_EXP_CLOSE) + ~pp.Literal(_EXP_ESCAPE_CLOSE) + ~pp.Literal(_EXP_DOUBLE_ESCAPE_CLOSE)
         exp_escape_open = pp.Literal(_EXP_ESCAPE_OPEN).setParseAction(pp.replaceWith(_EXP_OPEN))
         exp_escape_close = pp.Literal(_EXP_ESCAPE_CLOSE).setParseAction(pp.replaceWith(_EXP_CLOSE))
-        exp_text = pp.MatchFirst([pp.Word(pp.printables, excludeChars=_EXP_EXCLUDES), pp.CharsNotIn(_EXP_CLOSE_FIRST, exact=1)])
-        exp_content = pp.Combine(pp.OneOrMore(exp_not_open + exp_not_close + exp_text))
+        exp_text = pp.Word(pp.printables, excludeChars=_EXP_CLOSE_FIRST)
+        exp_content = pp.Combine(pp.OneOrMore(exp_not_close + exp_text))
         exp_string = pp.MatchFirst([double_escape, exp_escape_open, exp_escape_close, exp_content, white_space]).setParseAction(_string)
         exp_items = pp.OneOrMore(exp_string)
         export = (exp_open + pp.Group(exp_items) + exp_close).setParseAction(_export)
@@ -139,7 +139,7 @@ class Value(object):
         if len(items) == 1:
             return ExpItem(items[0], self._delimiter)
         else:
-            return ExpItem(CompItem(items), self_delimiter)
+            return ExpItem(CompItem(items), self._delimiter)
 
     def _createItems(self, tokens):
         items = []
