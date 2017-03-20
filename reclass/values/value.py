@@ -92,7 +92,7 @@ class Value(object):
         content = pp.Combine(pp.OneOrMore(ref_not_open + exp_not_open + text))
         string = pp.MatchFirst([double_escape, ref_escape_open, exp_escape_open, content, white_space]).setParseAction(_string)
 
-        item = pp.MatchFirst([reference, export, string])
+        item = reference | export | string
         line = pp.OneOrMore(item) + pp.StringEnd()
         return line
 
@@ -104,15 +104,19 @@ class Value(object):
         self._allRefs = False
         self._container = False
         if isinstance(val, str):
-            try:
-                tokens = Value._parser.leaveWhitespace().parseString(val).asList()
-            except pp.ParseException as e:
-                raise ParseError(e.msg, e.line, e.col, e.lineno)
-            items = self._createItems(tokens)
-            if len(items) is 1:
-                self._item = items[0]
+            if '$' in val:
+                # speed up: only use pyparsing if there is a $ in the string
+                try:
+                    tokens = Value._parser.leaveWhitespace().parseString(val).asList()
+                except pp.ParseException as e:
+                    raise ParseError(e.msg, e.line, e.col, e.lineno)
+                items = self._createItems(tokens)
+                if len(items) is 1:
+                    self._item = items[0]
+                else:
+                    self._item = CompItem(items)
             else:
-                self._item = CompItem(items)
+                self._item = ScaItem(val)
         elif isinstance(val, list):
             self._item = ListItem(val)
             self._container = True
