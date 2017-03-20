@@ -95,20 +95,14 @@ def _get_parser():
 
 def _get_simple_ref_parser():
     white_space = pp.White()
+    text = pp.Word(pp.printables, excludeChars=_EXCLUDES)
+    string = pp.OneOrMore(text | white_space).setParseAction(_string)
 
     ref_open = pp.Literal(_REF_OPEN).suppress()
     ref_close = pp.Literal(_REF_CLOSE).suppress()
-    ref_not_open = ~pp.Literal(_REF_OPEN) + ~pp.Literal(_REF_ESCAPE_OPEN) + ~pp.Literal(_REF_DOUBLE_ESCAPE_OPEN)
-    ref_text = pp.Word(pp.printables, excludeChars=_REF_CLOSE_FIRST)
-    ref_content = pp.Combine(pp.OneOrMore(ref_text | white_space)).setParseAction(_string)
-    reference = (ref_open + pp.Group(ref_content) + ref_close).setParseAction(_reference)
+    reference = (ref_open + pp.Group(string) + ref_close).setParseAction(_reference)
 
-    text = pp.MatchFirst([pp.Word(pp.printables, excludeChars=_EXCLUDES), pp.CharsNotIn('', exact=1)])
-    content = pp.OneOrMore(ref_not_open + text)
-    string = pp.Combine(pp.OneOrMore(pp.MatchFirst([content, white_space]))).setParseAction(_string)
-
-    item = reference | string
-    line = pp.OneOrMore(item) + pp.StringEnd()
+    line = pp.StringStart() + reference + pp.StringEnd()
     return line
 
 class Value(object):
@@ -122,34 +116,7 @@ class Value(object):
         self._allRefs = False
         self._container = False
         if isinstance(val, str):
-            dollars = val.count('$')
-            if dollars == 0:
-                # speed up: only use pyparsing if there is a $ in the string
-                self._item = ScaItem(val)
-            else:
-                open_braces = val.count('{')
-                if dollars == 1 and open_braces == 1 and '[' not in val and '\\' not in val:
-                    # speed up: simple reference or string
-                    try:
-                        tokens = Value._simple_ref_parser.leaveWhitespace().parseString(val).asList()
-                    except pp.ParseException as e:
-                        raise ParseError(e.msg, e.line, e.col, e.lineno)
-                    items = self._createItems(tokens)
-                    if len(items) is 1:
-                        self._item = items[0]
-                    else:
-                        self._item = CompItem(items)
-                else:
-                    # use the full parser
-                    try:
-                        tokens = Value._parser.leaveWhitespace().parseString(val).asList()
-                    except pp.ParseException as e:
-                        raise ParseError(e.msg, e.line, e.col, e.lineno)
-                    items = self._createItems(tokens)
-                    if len(items) is 1:
-                        self._item = items[0]
-                    else:
-                        self._item = CompItem(items)
+            self._item = self._parse_value_str(val)
         elif isinstance(val, list):
             self._item = ListItem(val)
             self._container = True
@@ -159,6 +126,34 @@ class Value(object):
         else:
             self._item = ScaItem(val)
         self.assembleRefs()
+
+    def _parse_value_str(self, val):
+        dollars = val.count('$')
+        if dollars == 0:
+            # speed up: only use pyparsing if there is a $ in the string
+            return ScaItem(val)
+        elif dollars == 1:
+            # speed up: try a simple reference
+            try:
+                tokens = Value._simple_ref_parser.leaveWhitespace().parseString(val).asList()
+            except pp.ParseException as e:
+                # fall back on the full parser
+                try:
+                    tokens = Value._parser.leaveWhitespace().parseString(val).asList()
+                except pp.ParseException as e:
+                    raise ParseError(e.msg, e.line, e.col, e.lineno)
+        else:
+            # use the full parser
+            try:
+                tokens = Value._parser.leaveWhitespace().parseString(val).asList()
+            except pp.ParseException as e:
+                raise ParseError(e.msg, e.line, e.col, e.lineno)
+
+        items = self._createItems(tokens)
+        if len(items) is 1:
+            return items[0]
+        else:
+            return CompItem(items)
 
     def _createRef(self, tokens):
         items = []
