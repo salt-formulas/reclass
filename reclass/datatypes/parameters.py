@@ -100,6 +100,8 @@ class Parameters(object):
             values = ValueList(Value(cur))
         elif isinstance(cur, Value):
             values = ValueList(cur)
+        elif isinstance(cur, ValueList):
+            values = cur
         else:
             values = ValueList(Value(cur))
 
