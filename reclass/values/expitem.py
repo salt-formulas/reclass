@@ -95,13 +95,12 @@ class ExpItem(Item):
             raise UndefinedVariableError(str(path))
 
     def _value_expression(self, exports):
-        result = []
+        results = {}
         path = DictPath(self._delimiter, self._expr[0][1]).drop_first()
         for node, items in exports.iteritems():
             if path.exists_in(items):
-                value = { node: copy.deepcopy(self._resolve(path, items)) }
-                result.append(value)
-        return result
+                results[node] = copy.deepcopy(self._resolve(path, items))
+        return results
 
     def _if_expression(self, context, exports):
         export_path = None
@@ -128,7 +127,7 @@ class ExpItem(Item):
         export_path.drop_first()
         value_path.drop_first()
 
-        results = []
+        results = {}
         for node, items in exports.iteritems():
             if export_path.exists_in(items):
                 export_value = str(self._resolve(export_path, items))
@@ -138,8 +137,7 @@ class ExpItem(Item):
                 elif test == _NOT_EQUAL and export_value != parameter_value:
                     test_passed = True
                 if test_passed:
-                    result = { node: copy.deepcopy(self._resolve(value_path, items)) }
-                    results.append(result)
+                    results[node] = copy.deepcopy(self._resolve(value_path, items))
         return results
 
     def _get_vars(self, var, export, parameter, value):
