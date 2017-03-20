@@ -96,11 +96,12 @@ class Parameters(object):
         if cur is None:
             return new
 
-        values = cur
         if isinstance(cur, (dict, list)):
             values = ValueList(Value(cur))
         elif isinstance(cur, Value):
             values = ValueList(cur)
+        else:
+            values = ValueList(Value(cur))
 
         if isinstance(new, (dict, list)):
            new = Value(new)

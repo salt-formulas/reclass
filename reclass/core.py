@@ -165,6 +165,9 @@ class Core(object):
         new_yaml = yaml.dump(new.as_dict(), default_flow_style=True, Dumper=ExplicitDumper)
         if old_yaml != new_yaml:
             self._storage.put_exports(new)
+            return True
+        else:
+            return False
 
     def nodeinfo(self, nodename):
         original_exports = Parameters(self._storage.get_exports())
@@ -176,12 +179,19 @@ class Core(object):
 
     def inventory(self):
         original_exports = Parameters(self._storage.get_exports())
-        exports = copy.deepcopy(original_exports)
         original_exports.render_simple()
+        exports = Parameters()
         entities = {}
         for n in self._storage.enumerate_nodes():
             entities[n] = self._nodeinfo(n, exports)
-        self._update_exports(original_exports, exports)
+        changed = self._update_exports(original_exports, exports)
+        if changed:
+            # use brute force: if the exports have changed rerun
+            # the inventory cacluation
+            #exports = Parameters(exports.as_dict())
+            entities = {}
+            for n in self._storage.enumerate_nodes():
+                entities[n] = self._nodeinfo(n, exports)
 
         nodes = {}
         applications = {}
