@@ -9,13 +9,14 @@ import pyparsing as pp
 
 from item import Item
 from reclass.utils.dictpath import DictPath
-from reclass.errors import ExpressionError, UndefinedVariableError
+from reclass.errors import ExpressionError, ParseError, UndefinedVariableError
 
-_VAR = 'VAR'
+_OBJ = 'OBJ'
 _TEST = 'TEST'
-_VALUE = 'VALUE'
 
+_VALUE = 'VALUE'
 _IF = 'IF'
+
 _EQUAL = '=='
 _NOT_EQUAL = '!='
 
@@ -23,9 +24,23 @@ class ExpItem(Item):
 
     def _get_parser():
 
-        def _variable(string, location, tokens):
+        def _object(string, location, tokens):
             token = tokens[0]
-            tokens[0] = (_VAR, token)
+            tokens[0] = (_OBJ, token)
+
+        def _integer(string, location, tokens):
+            try:
+                token = int(tokens[0])
+            except ValueError:
+                token = tokens[0]
+            tokens[0] = (_OBJ, token)
+
+        def _number(string, location, tokens):
+            try:
+                token = float(tokens[0])
+            except ValueError:
+                token = tokens[0]
+            tokens[0] = (_OBJ, token)
 
         def _test(string, location, tokens):
             token = tokens[0]
@@ -35,17 +50,25 @@ class ExpItem(Item):
             token = tokens[0]
             tokens[0] = (_IF, token)
 
-        _EXCLUDES = '?!='
-        _END_IF = '?'
+        def _expr_var(string, location, tokens):
+            token = tokens[0]
+            tokens[0] = (_VALUE, token)
+
+        def _expr_test(string, location, tokens):
+            token = tokens[0]
+            tokens[0] = (_TEST, token)
 
         white_space = pp.White().suppress()
         end = pp.StringEnd()
         operator = (pp.Literal(_EQUAL) | pp.Literal(_NOT_EQUAL)).setParseAction(_test)
-        end_if = pp.Literal(_END_IF).setParseAction(_if)
-        not_operator = ~pp.Literal(_EQUAL) + ~pp.Literal(_NOT_EQUAL) + ~pp.Literal(_END_IF)
-        variable = not_operator + pp.Word(pp.printables).setParseAction(_variable)
-        item = (operator | end_if | variable) + (white_space | end)
-        expr = pp.Optional(white_space) + pp.OneOrMore(item)
+        begin_if = pp.CaselessLiteral(_IF, ).setParseAction(_if)
+        obj = pp.Word(pp.printables).setParseAction(_object)
+        integer = pp.Word('0123456789-').setParseAction(_integer)
+        number = pp.Word('0123456789-.').setParseAction(_number)
+        item = integer | number | obj
+        expr_var = pp.Group(obj + pp.Optional(white_space) + end).setParseAction(_expr_var)
+        expr_test = pp.Group(obj + white_space + begin_if + white_space + item + white_space + operator + white_space + item).setParseAction(_expr_test)
+        expr = pp.Optional(white_space) + (expr_test | expr_var)
         return expr
 
     _parser = _get_parser()
@@ -59,22 +82,22 @@ class ExpItem(Item):
 
     def _parse_expression(self, expr):
         try:
-            self._expr = ExpItem._parser.parseString(expr).asList()
+            tokens = ExpItem._parser.parseString(expr).asList()
         except pp.ParseException as e:
             raise ParseError(e.msg, e.line, e.col, e.lineno)
 
-        if len(self._expr) == 1 and self._expr[0][0] == _VAR:
-            self._type = _VALUE
-            return
-        elif len(self._expr) == 5 and self._expr[0][0] == _VAR and self._expr[1][0] == _TEST and self._expr[2][0] == _VAR and self._expr[3][0] == _IF and self._expr[4][0] == _VAR:
-            self._type = _TEST
-            export, parameter, value = self._get_vars(self._expr[0][1], None, None, None)
-            export, parameter, value = self._get_vars(self._expr[2][1], export, parameter, value)
+        if len(tokens) == 1:
+            self._type = tokens[0][0]
+            self._expr = tokens[0][1]
+        else:
+            raise ExpressionError('Failed to parse %s' % str(expr))
+
+        if self._type == _TEST:
+            export, parameter, value = self._get_vars(self._expr[2][1], None, None, None)
+            export, parameter, value = self._get_vars(self._expr[4][1], export, parameter, value)
             if parameter != None:
                 path = DictPath(self._delimiter, parameter).drop_first()
                 self._ref.append(str(path))
-            return
-        raise ExpressionError('Failed to parse %s' % str(self))
 
     def contents(self):
         return self._expr
@@ -102,24 +125,24 @@ class ExpItem(Item):
                 results[node] = copy.deepcopy(self._resolve(path, items))
         return results
 
-    def _if_expression(self, context, exports):
+    def _test_expression(self, context, exports):
         export_path = None
         parameter_path = None
         parameter_value = None
         test = None
-        value_path = DictPath(self._delimiter, self._expr[4][1])
+        value_path = DictPath(self._delimiter, self._expr[0][1])
 
-        if self._expr[1][1] == _EQUAL:
+        if self._expr[3][1] == _EQUAL:
             test = _EQUAL
-        elif self._expr[1][1] == _NOT_EQUAL:
+        elif self._expr[3][1] == _NOT_EQUAL:
             test = _NOT_EQUAL
 
-        export_path, parameter_path, parameter_value = self._get_vars(self._expr[0][1], export_path, parameter_path, parameter_value)
         export_path, parameter_path, parameter_value = self._get_vars(self._expr[2][1], export_path, parameter_path, parameter_value)
+        export_path, parameter_path, parameter_value = self._get_vars(self._expr[4][1], export_path, parameter_path, parameter_value)
 
         if parameter_path != None:
             parameter_path.drop_first()
-            parameter_value = str(self._resolve(parameter, context))
+            parameter_value = self._resolve(parameter, context)
 
         if export_path is None or parameter_value is None or test is None or value_path is None:
             ExpressionError('Failed to render %s' % str(self))
@@ -130,7 +153,7 @@ class ExpItem(Item):
         results = {}
         for node, items in exports.iteritems():
             if export_path.exists_in(items):
-                export_value = str(self._resolve(export_path, items))
+                export_value = self._resolve(export_path, items)
                 test_passed = False
                 if test == _EQUAL and export_value == parameter_value:
                     test_passed = True
@@ -143,9 +166,9 @@ class ExpItem(Item):
     def _get_vars(self, var, export, parameter, value):
         if isinstance(var, str):
             path = DictPath(self._delimiter, var)
-            if path.path[0] == 'exports':
+            if path.path[0].lower() == 'exports':
                 export = path
-            elif path.path[0] == 'SELF':
+            elif path.path[0].lower() == 'self':
                 parameter = path
             else:
                 value = var
@@ -157,7 +180,7 @@ class ExpItem(Item):
         if self._type == _VALUE:
             return self._value_expression(exports)
         elif self._type == _TEST:
-            return self._if_expression(context, exports)
+            return self._test_expression(context, exports)
         raise ExpressionError('Failed to render %s' % str(self))
 
     def __str__(self):
