@@ -150,7 +150,7 @@ class Value(object):
                 raise ParseError(e.msg, e.line, e.col, e.lineno)
 
         items = self._createItems(tokens)
-        if len(items) is 1:
+        if len(items) == 1:
             return items[0]
         else:
             return CompItem(items)
