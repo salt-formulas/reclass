@@ -95,9 +95,13 @@ class ExpItem(Item):
         if self._type == _TEST:
             export, parameter, value = self._get_vars(self._expr[2][1], None, None, None)
             export, parameter, value = self._get_vars(self._expr[4][1], export, parameter, value)
-            if parameter != None:
-                path = DictPath(self._delimiter, parameter).drop_first()
-                self._ref.append(str(path))
+            if parameter is not None:
+                path = parameter
+                path.drop_first()
+                self._refs.append(str(path))
+
+    def assembleRefs(self, context):
+        return
 
     def contents(self):
         return self._expr
@@ -140,9 +144,9 @@ class ExpItem(Item):
         export_path, parameter_path, parameter_value = self._get_vars(self._expr[2][1], export_path, parameter_path, parameter_value)
         export_path, parameter_path, parameter_value = self._get_vars(self._expr[4][1], export_path, parameter_path, parameter_value)
 
-        if parameter_path != None:
+        if parameter_path is not None:
             parameter_path.drop_first()
-            parameter_value = self._resolve(parameter, context)
+            parameter_value = self._resolve(parameter_path, context)
 
         if export_path is None or parameter_value is None or test is None or value_path is None:
             ExpressionError('Failed to render %s' % str(self))
