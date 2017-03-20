@@ -179,8 +179,8 @@ class Core(object):
 
     def inventory(self):
         original_exports = Parameters(self._storage.get_exports())
+        exports = copy.deepcopy(original_exports)
         original_exports.render_simple()
-        exports = Parameters()
         entities = {}
         for n in self._storage.enumerate_nodes():
             entities[n] = self._nodeinfo(n, exports)
