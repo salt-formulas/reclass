@@ -56,7 +56,7 @@ def cli():
                               defaults=defaults)
 
         storage = get_storage(options.storage_type, options.nodes_uri,
-                              options.classes_uri)
+                              options.classes_uri, options.exports_uri)
         class_mappings = defaults.get('class_mappings')
         reclass = Core(storage, class_mappings)
 
