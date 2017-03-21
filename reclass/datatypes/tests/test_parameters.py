@@ -401,5 +401,12 @@ class TestParametersNoMock(unittest.TestCase):
         p1.interpolate()
         self.assertEqual(p1.as_dict(), r)
 
+    def test_overwrite_method(self):
+        p = Parameters({'alpha': { 'one': 1, 'two': 2}})
+        d = {'alpha': { 'three': 3, 'four': 4}}
+        p.overwrite(d)
+        p.render_simple()
+        self.assertEqual(p.as_dict(), d)
+
 if __name__ == '__main__':
     unittest.main()

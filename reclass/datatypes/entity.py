@@ -77,7 +77,7 @@ class Entity(object):
 
     def interpolate(self, nodename, exports):
         self._exports.interpolate_from_external(self._parameters)
-        exports.merge({ nodename: self._exports.as_dict() })
+        exports.overwrite({ nodename: self._exports.as_dict() })
         exports.render_simple()
         self._parameters.interpolate(exports=exports.as_dict())
 

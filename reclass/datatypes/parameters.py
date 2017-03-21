@@ -217,6 +217,10 @@ class Parameters(object):
             raise TypeError('Cannot merge %s objects into %s' % (type(other),
                             self.__class__.__name__))
 
+    def overwrite(self, other):
+        overdict = {'~' + key: value for key, value in other.iteritems()}
+        self.merge(overdict)
+
     def render_simple(self, options=None):
         if options is None:
             options = MergeOptions()
