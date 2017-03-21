@@ -96,13 +96,13 @@ def _get_parser():
 def _get_simple_ref_parser():
     white_space = pp.White()
     text = pp.Word(pp.printables, excludeChars=_EXCLUDES)
-    string = pp.OneOrMore(text | white_space).setParseAction(_string)
+    string = pp.Combine(pp.OneOrMore(text | white_space)).setParseAction(_string)
 
     ref_open = pp.Literal(_REF_OPEN).suppress()
     ref_close = pp.Literal(_REF_CLOSE).suppress()
     reference = (ref_open + pp.Group(string) + ref_close).setParseAction(_reference)
 
-    line = pp.StringStart() + reference + pp.StringEnd()
+    line = pp.StringStart() + pp.Optional(string) + reference + pp.Optional(string) + pp.StringEnd()
     return line
 
 class Value(object):
