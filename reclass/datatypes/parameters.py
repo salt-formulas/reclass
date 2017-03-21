@@ -73,6 +73,10 @@ class Parameters(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def delete_key(self, key):
+        self._base.pop(key, None)
+        self._unrendered.pop(key, None)
+
     def as_dict(self):
         return self._base.copy()
 

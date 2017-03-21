@@ -181,9 +181,13 @@ class Core(object):
         original_exports = Parameters(self._storage.get_exports())
         exports = copy.deepcopy(original_exports)
         original_exports.render_simple()
+        nodes = { key for key in exports.as_dict()}
         entities = {}
         for n in self._storage.enumerate_nodes():
             entities[n] = self._nodeinfo(n, exports)
+            nodes.discard(n)
+        for n in nodes:
+            exports.delete_key(n)
         changed = self._update_exports(original_exports, exports)
         if changed:
             # use brute force: if the exports have changed rerun

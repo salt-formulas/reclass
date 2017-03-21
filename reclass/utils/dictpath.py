@@ -137,16 +137,20 @@ class DictPath(object):
         del self._parts[0]
         return self
 
-    def exists_in(self, base):
-        container = base
+    def exists_in(self, container):
+        item = container
         for i in self._parts:
-            if isinstance(container, (dict, list)) and i in container:
-                if isinstance(container, dict):
-                    container = container[i]
-                elif isinstance(container, list):
-                    container = container[int(i)]
-            elif i == self._parts[-1]:
-                return True
+            if isinstance(item, (dict, list)):
+                if i in item:
+                    if isinstance(item, dict):
+                        item = item[i]
+                    elif isinstance(container, list):
+                        item = item[int(i)]
+                else:
+                    return False
             else:
-                return False
+                if item == self._parts[-1]:
+                    return True
+                else:
+                    return False
         return True
