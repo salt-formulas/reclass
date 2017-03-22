@@ -21,6 +21,9 @@ class Item(object):
     def has_exports(self):
         return False
 
+    def is_container(self):
+        return False
+
     def is_complex():
         return (self.has_references | self.has_exports)
 

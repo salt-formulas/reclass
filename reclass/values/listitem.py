@@ -14,6 +14,9 @@ class ListItem(Item):
     def contents(self):
         return self._list
 
+    def is_container(self):
+        return True
+
     def render(self, context, exports):
         return self._list
 

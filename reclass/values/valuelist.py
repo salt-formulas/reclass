@@ -22,9 +22,10 @@ class ValueList(object):
 
     def append(self, value):
         self._values.append(value)
-        self._refs.extend(value._refs)
+        if value.has_references():
+            self._refs.extend(value.get_references())
         if value.allRefs() is False:
-            self._allRefs = True
+            self._allRefs = False
 
     def extend(self, values):
         self._values.extend(values._values)

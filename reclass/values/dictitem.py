@@ -14,6 +14,9 @@ class DictItem(Item):
     def contents(self):
         return self._dict
 
+    def is_container(self):
+        return True
+
     def merge_over(self, item, options):
         from scaitem import ScaItem
 
