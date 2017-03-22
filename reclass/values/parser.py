@@ -152,10 +152,6 @@ class Parser(object):
         else:
             return CompItem(items)
 
-    _item_dict = { _STR: (lambda s, x: ScaItem(x)),
-                   _REF: (lambda s, x: s._create_ref(x)),
-                   _EXP: (lambda s, x: s._create_exp(x)) }
-
     def _create_items(self, tokens):
         items = []
         for token in tokens:
