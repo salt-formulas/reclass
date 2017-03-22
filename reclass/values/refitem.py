@@ -11,6 +11,7 @@ from reclass.errors import UndefinedVariableError
 class RefItem(Item):
 
     def __init__(self, items, delimiter):
+        self.type = Item.REFERENCE
         self._delimiter = delimiter
         self._items = items
         self._refs = []

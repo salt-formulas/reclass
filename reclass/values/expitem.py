@@ -74,6 +74,7 @@ class ExpItem(Item):
     _parser = _get_parser()
 
     def __init__(self, item, delimiter):
+        self.type = Item.EXPORT
         self._delimiter = delimiter
         self._type = None
         self._refs = []

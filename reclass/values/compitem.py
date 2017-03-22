@@ -9,6 +9,7 @@ from item import Item
 class CompItem(Item):
 
     def __init__(self, items):
+        self.type = Item.COMPOSITE
         self._items = items
         self._refs = []
         self._allRefs = False

@@ -9,8 +9,12 @@ from reclass.errors import UndefinedVariableError
 
 class Item(object):
 
-    def __init__(self):
-        return
+    COMPOSITE = 1
+    DICTIONARY = 2
+    EXPORT = 3
+    LIST = 4
+    REFERENCE = 5
+    SCALAR = 6
 
     def allRefs(self):
         return True

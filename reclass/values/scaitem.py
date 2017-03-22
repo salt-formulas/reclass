@@ -9,23 +9,21 @@ from item import Item
 class ScaItem(Item):
 
     def __init__(self, value):
+        self.type = Item.SCALAR
         self._value = value
 
     def contents(self):
         return self._value
 
     def merge_over(self, item, options):
-        from dictitem import DictItem
-        from listitem import ListItem
-
-        if isinstance(item, ScaItem):
+        if item.type == Item.SCALAR:
             return self
-        elif isinstance(item, ListItem):
+        elif item.type == Item.LIST:
             if options.allow_scalar_over_list:
                 return self
             else:
                 raise TypeError('allow scalar over list = False: cannot merge %s over %s' % (repr(self), repr(item)))
-        elif isinstance(item, DictItem):
+        elif item.type == Item.DICTIONARY:
             if options.allow_scalar_over_dict:
                 return self
             else:

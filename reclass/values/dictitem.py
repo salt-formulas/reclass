@@ -9,6 +9,7 @@ from item import Item
 class DictItem(Item):
 
     def __init__(self, item):
+        self.type = Item.DICTIONARY
         self._dict = item
 
     def contents(self):
@@ -18,9 +19,7 @@ class DictItem(Item):
         return True
 
     def merge_over(self, item, options):
-        from scaitem import ScaItem
-
-        if isinstance(item, ScaItem):
+        if item.type == Item.SCALAR:
             if item.contents() is None or options.allow_dict_over_scalar:
                 return self
             else:

@@ -9,6 +9,7 @@ from item import Item
 class ListItem(Item):
 
     def __init__(self, item):
+        self.type = Item.LIST
         self._list = item
 
     def contents(self):
@@ -21,13 +22,10 @@ class ListItem(Item):
         return self._list
 
     def merge_over(self, item, options):
-        from scaitem import ScaItem
-
-        if isinstance(item, ListItem):
-            for i in self._list:
-                item._list.append(i)
+        if item.type == Item.LIST:
+            item._list.extend(self._list)
             return item
-        elif isinstance(item, ScaItem):
+        elif item.type == Item.SCALAR:
             if item.contents() is None:
                 return self
             elif options.allow_list_over_scalar:
