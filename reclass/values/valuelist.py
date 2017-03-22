@@ -6,8 +6,6 @@
 
 import copy
 
-from mergeoptions import MergeOptions
-
 class ValueList(object):
 
     def __init__(self, value=None):
@@ -62,9 +60,7 @@ class ValueList(object):
             if value.allRefs() is False:
                 self._allRefs = False
 
-    def merge(self, options=None):
-        if options is None:
-            options = MergeOptions()
+    def merge(self, options):
         output = None
         for n, value in enumerate(self._values):
             if n is 0:
@@ -73,11 +69,9 @@ class ValueList(object):
                 output = value.merge_over(output, options)
         return output
 
-    def render(self, context, exports, options=None):
+    def render(self, context, exports, options):
         from reclass.datatypes.parameters import Parameters
 
-        if options is None:
-            options = MergeOptions()
         output = None
         deepCopied = False
         for n, value in enumerate(self._values):
@@ -95,6 +89,7 @@ class ValueList(object):
                 elif isinstance(output, list) and isinstance(new, list):
                     if not deepCopied:
                         output = copy.deepcopy(output)
+                        deepCopied = True
                     output.extend(new)
                     continue
                 elif isinstance(output, (dict, list)) or isinstance(new, (dict, list)):

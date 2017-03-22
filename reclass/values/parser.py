@@ -13,7 +13,7 @@ from listitem import ListItem
 from refitem import RefItem
 from scaitem import ScaItem
 
-from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER, ESCAPE_CHARACTER, REFERENCE_SENTINELS, EXPORT_SENTINELS
+from reclass.defaults import ESCAPE_CHARACTER, REFERENCE_SENTINELS, EXPORT_SENTINELS
 from reclass.errors import ParseError
 
 _STR = 'STR'
@@ -111,7 +111,7 @@ class Parser(object):
     _parser = _get_parser()
     _simple_ref_parser = _get_simple_ref_parser()
 
-    def parse(self, value, delimiter=PARAMETER_INTERPOLATION_DELIMITER):
+    def parse(self, value, delimiter):
         self._delimiter = delimiter
 
         if isinstance(value, str):

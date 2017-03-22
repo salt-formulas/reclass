@@ -51,10 +51,12 @@ class Parameters(object):
         self._base = {}
         self._unrendered = None
         self._escapes_handled = {}
+        self._options = None
         if mapping is not None:
-            # we initialise by merging, otherwise the list of references might
-            # not be updated
-            self.merge(mapping, initmerge=True)
+            # we initialise by merging
+            self._initmerge = True
+            self.merge(mapping)
+            self._initmerge = False
 
     delimiter = property(lambda self: self._delimiter)
 
@@ -100,28 +102,23 @@ class Parameters(object):
         if cur is None:
             return new
 
-        if isinstance(cur, (dict, list)):
-            values = ValueList(Value(cur))
-        elif isinstance(cur, Value):
+        if isinstance(cur, Value):
             values = ValueList(cur)
         elif isinstance(cur, ValueList):
             values = cur
         else:
             values = ValueList(Value(cur))
 
-        if isinstance(new, (dict, list)):
-           new = Value(new)
-
         if isinstance(new, Value):
             values.append(new)
         elif isinstance(new, ValueList):
             values.extend(new)
         else:
-            raise TypeError('Can not merge %r into %r' % (new, cur))
+            values.append(Value(new))
 
         return values
 
-    def _merge_dict(self, cur, new, path, initmerge):
+    def _merge_dict(self, cur, new, path):
         """Merge a dictionary with another dictionary.
 
         Iterate over keys in new. If this is not an initialization merge and
@@ -157,14 +154,13 @@ class Parameters(object):
         ovrprfx = Parameters.DICT_KEY_OVERRIDE_PREFIX
 
         for key, newvalue in new.iteritems():
-            if key.startswith(ovrprfx) and not initmerge:
+            if key.startswith(ovrprfx) and not self._initmerge:
                 ret[key.lstrip(ovrprfx)] = newvalue
             else:
-                ret[key] = self._merge_recurse(ret.get(key), newvalue,
-                                            path.new_subpath(key), initmerge)
+                ret[key] = self._merge_recurse(ret.get(key), newvalue, path.new_subpath(key))
         return ret
 
-    def _merge_recurse(self, cur, new, path=None, initmerge=False):
+    def _merge_recurse(self, cur, new, path=None):
         """Merge a parameter with another parameter.
 
         Iterate over keys in new. Call _merge_dict, _extend_list, or
@@ -187,12 +183,12 @@ class Parameters(object):
         if isinstance(new, dict) and (cur is None or isinstance(cur, (dict))):
             if cur is None:
                 cur = {}
-            return self._merge_dict(cur, new, path, initmerge)
+            return self._merge_dict(cur, new, path)
 
         else:
             return self._update_value(cur, new, path)
 
-    def merge(self, other, initmerge=False):
+    def merge(self, other):
         """Merge function (public edition).
 
         Call _merge_recurse on self with either another Parameter object or a
@@ -210,12 +206,10 @@ class Parameters(object):
         if isinstance(other, dict):
             wrapped = copy.deepcopy(other)
             self._wrap_dict(wrapped)
-            self._base = self._merge_recurse(self._base, wrapped,
-                                             DictPath(self.delimiter), initmerge)
+            self._base = self._merge_recurse(self._base, wrapped, DictPath(self.delimiter))
 
         elif isinstance(other, self.__class__):
-            self._base = self._merge_recurse(self._base, other._base,
-                                             DictPath(self.delimiter), initmerge)
+            self._base = self._merge_recurse(self._base, other._base, DictPath(self.delimiter))
 
         else:
             raise TypeError('Cannot merge %s objects into %s' % (type(other),
@@ -226,69 +220,69 @@ class Parameters(object):
         self.merge(overdict)
 
     def render_simple(self, options=None):
-        if options is None:
-            options = MergeOptions()
-        self._unrendered = {}
-        self._render_simple_dict(self._base, DictPath(self.delimiter), options)
+        self._unrendered = None
+        self._initialise_interpolate(options)
 
-    def _render_simple_container(self, container, key, value, path, options):
+    def _render_simple_container(self, container, key, value, path):
             if isinstance(value, ValueList):
                 if value.is_complex():
                     self._unrendered[path.new_subpath(key)] = True
                     return
                 else:
-                    value = value.merge(options)
+                    value = value.merge(self._options)
             if isinstance(value, Value) and value.is_container():
                 value = value.contents()
             if isinstance(value, dict):
-                self._render_simple_dict(value, path.new_subpath(key), options)
+                self._render_simple_dict(value, path.new_subpath(key))
                 container[key] = value
             elif isinstance(value, list):
-                self._render_simple_list(value, path.new_subpath(key), options)
+                self._render_simple_list(value, path.new_subpath(key))
                 container[key] = value
             elif isinstance(value, Value):
                 if value.is_complex():
                     self._unrendered[path.new_subpath(key)] = True
                 else:
-                    container[key] = value.render(None, None, options)
+                    container[key] = value.render(None, None, self._options)
 
-    def _render_simple_dict(self, dictionary, path, options):
+    def _render_simple_dict(self, dictionary, path):
         for key, value in dictionary.iteritems():
-            self._render_simple_container(dictionary, key, value, path, options)
+            self._render_simple_container(dictionary, key, value, path)
 
-    def _render_simple_list(self, item_list, path, options):
+    def _render_simple_list(self, item_list, path):
         for n, value in enumerate(item_list):
-            self._render_simple_container(item_list, n, value, path, options)
+            self._render_simple_container(item_list, n, value, path)
 
-    def _ensure_render_simple(self, options):
+    def _initialise_interpolate(self, options):
+        if options is None:
+            self._options = MergeOptions()
+        else:
+            self._options = options
+
         if self._unrendered is None:
-            self.render_simple(options)
+            self._unrendered = {}
+            self._render_simple_dict(self._base, DictPath(self.delimiter))
 
     def interpolate_from_external(self, external, options=None):
-        if self._unrendered is None:
-            options = MergeOptions()
-        self._ensure_render_simple(options)
-        external._ensure_render_simple(options)
+        self._initialise_interpolate(options)
+        external._initialise_interpolate(options)
         while len(self._unrendered) > 0:
             path, v = self._unrendered.iteritems().next()
             value = path.get_value(self._base)
-            external._interpolate_references(path, value, None, options)
-            new = value.render(external._base, options)
+            external._interpolate_references(path, value, None)
+            new = value.render(external._base, self._options)
             path.set_value(self._base, new)
             del self._unrendered[path]
 
     def interpolate(self, exports=None, options=None):
-        if options is None:
-            options = MergeOptions()
-        self._ensure_render_simple(options)
+        self._initialise_interpolate(options)
         while len(self._unrendered) > 0:
             # we could use a view here, but this is simple enough:
             # _interpolate_inner removes references from the refs hash after
             # processing them, so we cannot just iterate the dict
             path, v = self._unrendered.iteritems().next()
-            self._interpolate_inner(path, exports, options)
+            self._interpolate_inner(path, exports)
 
-    def _interpolate_inner(self, path, exports, options):
+    def _interpolate_inner(self, path, exports):
         value = path.get_value(self._base)
         if not isinstance(value, (Value, ValueList)):
             # references to lists and dicts are only deepcopied when merged
@@ -297,24 +291,24 @@ class Parameters(object):
             del self._unrendered[path]
             return
         self._unrendered[path] = False
-        self._interpolate_references(path, value, exports, options)
-        new = self._interpolate_render_value(path, value, exports, options)
+        self._interpolate_references(path, value, exports)
+        new = self._interpolate_render_value(path, value, exports)
         path.set_value(self._base, new)
         del self._unrendered[path]
 
-    def _interpolate_render_value(self, path, value, exports, options):
+    def _interpolate_render_value(self, path, value, exports):
         try:
-            new = value.render(self._base, exports, options)
+            new = value.render(self._base, exports, self._options)
         except UndefinedVariableError as e:
             raise UndefinedVariableError(e.var, path)
 
         if isinstance(new, dict):
-            self._render_simple_dict(new, path, options)
+            self._render_simple_dict(new, path)
         elif isinstance(new, list):
-            self._render_simple_list(new, path, options)
+            self._render_simple_list(new, path)
         return new
 
-    def _interpolate_references(self, path, value, exports, options):
+    def _interpolate_references(self, path, value, exports):
         all_refs = False
         while not all_refs:
             for ref in value.get_references():
@@ -329,14 +323,14 @@ class Parameters(object):
                         # faced with a cyclical reference.
                         raise InfiniteRecursionError(path, ref)
                     else:
-                        self._interpolate_inner(path_from_ref, exports, options)
+                        self._interpolate_inner(path_from_ref, exports)
                 else:
                     # ensure ancestor keys are already dereferenced
                     ancestor = DictPath(self.delimiter)
                     for k in path_from_ref.key_parts():
                         ancestor = ancestor.new_subpath(k)
                         if ancestor in self._unrendered:
-                            self._interpolate_inner(ancestor, exports, options)
+                            self._interpolate_inner(ancestor, exports)
             if value.allRefs():
                 all_refs = True
             else:
