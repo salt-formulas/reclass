@@ -76,10 +76,10 @@ class Entity(object):
         self._parameters.merge(params)
 
     def interpolate(self, nodename, exports):
+        exports.overwrite({ nodename: self._exports._base })
+        self._parameters.interpolate(exports=exports._base)
         self._exports.interpolate_from_external(self._parameters)
-        exports.overwrite({ nodename: self._exports.as_dict() })
-        exports.render_simple()
-        self._parameters.interpolate(exports=exports.as_dict())
+        exports.interpolate_from_external(self._parameters)
 
     def __eq__(self, other):
         return isinstance(other, type(self)) \
