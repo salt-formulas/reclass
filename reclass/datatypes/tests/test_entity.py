@@ -6,7 +6,7 @@
 # Copyright © 2007–14 martin f. krafft <madduck@madduck.net>
 # Released under the terms of the Artistic Licence 2.0
 #
-from reclass.datatypes import Entity, Classes, Parameters, Applications
+from reclass.datatypes import Entity, Classes, Parameters, Applications, Exports
 import unittest
 try:
     import unittest.mock as mock
@@ -14,11 +14,12 @@ except ImportError:
     import mock
 
 @mock.patch.multiple('reclass.datatypes', autospec=True, Classes=mock.DEFAULT,
-                     Applications=mock.DEFAULT, Parameters=mock.DEFAULT)
+                     Applications=mock.DEFAULT, Parameters=mock.DEFAULT,
+                     Exports=mock.DEFAULT)
 class TestEntity(unittest.TestCase):
 
-    def _make_instances(self, Classes, Applications, Parameters):
-        return Classes(), Applications(), Parameters(), mock.MagicMock(spec=Parameters)
+    def _make_instances(self, Classes, Applications, Parameters, Exports):
+        return Classes(), Applications(), Parameters(), Exports()
 
     def test_constructor_default(self, **mocks):
         # Actually test the real objects by calling the default constructor,
@@ -29,7 +30,7 @@ class TestEntity(unittest.TestCase):
         self.assertIsInstance(e.classes, Classes)
         self.assertIsInstance(e.applications, Applications)
         self.assertIsInstance(e.parameters, Parameters)
-        self.assertIsInstance(e.exports, Parameters)
+        self.assertIsInstance(e.exports, Exports)
 
     def test_constructor_empty(self, **types):
         instances = self._make_instances(**types)
@@ -157,9 +158,9 @@ class TestEntity(unittest.TestCase):
 class TestEntityNoMock(unittest.TestCase):
 
     def test_exports_with_refs(self):
-        exports = Parameters({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
+        exports = Exports({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
         exports_entity = Entity(None, None, None, exports)
-        node3_exports = Parameters({'a': '${a}', 'b': '${b}'})
+        node3_exports = Exports({'a': '${a}', 'b': '${b}'})
         node3_parameters = Parameters({'name': 'node3', 'a': '${c}', 'b': 5})
         node3_parameters.merge({'c': 3})
         node3_entity = Entity(None, None, node3_parameters, node3_exports)
@@ -168,9 +169,9 @@ class TestEntityNoMock(unittest.TestCase):
         self.assertDictEqual(exports.as_dict(), r)
 
     def test_reference_to_an_export(self):
-        exports = Parameters({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
+        exports = Exports({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
         exports_entity = Entity(None, None, None, exports)
-        node3_exports = Parameters({'a': '${a}', 'b': '${b}'})
+        node3_exports = Exports({'a': '${a}', 'b': '${b}'})
         node3_parameters = Parameters({'name': 'node3', 'ref': '${exp}', 'a': '${c}', 'b': 5})
         node3_parameters.merge({'c': 3, 'exp': '$[ exports:a ]'})
         node3_entity = Entity(None, None, node3_parameters, node3_exports)
@@ -179,9 +180,9 @@ class TestEntityNoMock(unittest.TestCase):
         self.assertDictEqual(exports.as_dict(), r)
 
     def test_exports_with_nested_references(self):
-        exports = Parameters({'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}})
+        exports = Exports({'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}})
         exports_entity = Entity(None, None, None, exports)
-        node3_exports = Parameters({'alpha': '${alpha}'})
+        node3_exports = Exports({'alpha': '${alpha}'})
         node3_parameters = Parameters({'name': 'node3', 'alpha': {'a': '${one}', 'b': '${two}'}, 'beta': '$[ exports:alpha ]', 'one': '111', 'two': '${three}', 'three': '123'})
         node3_entity = Entity(None, None, node3_parameters, node3_exports)
         res_params = {'beta': {'node1': {'a': 1, 'b': 2}, 'node3': {'a': '111', 'b': '123'}, 'node2': {'a': 3, 'b': 4}}, 'name': 'node3', 'alpha': {'a': '111', 'b': '123'}, 'three': '123', 'two': '123', 'one': '111'}

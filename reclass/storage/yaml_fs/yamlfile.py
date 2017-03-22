@@ -53,7 +53,7 @@ class YamlFile(object):
         exports = self._data.get('exports')
         if exports is None:
             exports = {}
-        exports = datatypes.Parameters(exports)
+        exports = datatypes.Exports(exports)
 
         if name is None:
             name = self._path

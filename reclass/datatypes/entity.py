@@ -8,6 +8,7 @@
 #
 from classes import Classes
 from applications import Applications
+from exports import Exports
 from parameters import Parameters
 
 class Entity(object):
@@ -23,7 +24,7 @@ class Entity(object):
         if applications is None: applications = Applications()
         self._set_applications(applications)
         if parameters is None: parameters = Parameters()
-        if exports is None: exports = Parameters()
+        if exports is None: exports = Exports()
         self._set_parameters(parameters)
         self._set_exports(exports)
         self._uri = uri or ''
@@ -58,7 +59,7 @@ class Entity(object):
         self._parameters = parameters
 
     def _set_exports(self, exports):
-        if not isinstance(exports, Parameters):
+        if not isinstance(exports, Exports):
             raise TypeError('Entity.exports cannot be set to '\
                             'instance of type %s' % type(exports))
         self._exports = exports
