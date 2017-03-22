@@ -41,10 +41,8 @@ class CompItem(Item):
         if len(self._items) == 1:
             return self._items[0].render(context, exports)
         # Multiple items
-        string = ''
-        for item in self._items:
-            string += str(item.render(context, exports))
-        return string
+        strings = [ str(i.render(context, exports)) for i in self._items ]
+        return "".join(strings)
 
     def __repr__(self):
         return 'CompItem(%r)' % self._items
