@@ -16,9 +16,9 @@ from scaitem import ScaItem
 from reclass.defaults import ESCAPE_CHARACTER, REFERENCE_SENTINELS, EXPORT_SENTINELS
 from reclass.errors import ParseError
 
-_STR = 'STR'
-_REF = 'REF'
-_EXP = 'EXP'
+_STR = 1
+_REF = 2
+_EXP = 3
 
 _ESCAPE = ESCAPE_CHARACTER
 _DOUBLE_ESCAPE = _ESCAPE + _ESCAPE
@@ -146,22 +146,37 @@ class Parser(object):
             except pp.ParseException as e:
                 raise ParseError(e.msg, e.line, e.col, e.lineno)
 
-        items = self._createItems(tokens)
+        items = self._create_items(tokens)
         if len(items) == 1:
             return items[0]
         else:
             return CompItem(items)
 
-    def _createRef(self, tokens):
+    _item_dict = { _STR: (lambda s, x: ScaItem(x)),
+                   _REF: (lambda s, x: s._create_ref(x)),
+                   _EXP: (lambda s, x: s._create_exp(x)) }
+
+    def _create_items(self, tokens):
         items = []
         for token in tokens:
             if token[0] == _STR:
                 items.append(ScaItem(token[1]))
             elif token[0] == _REF:
-                items.append(self._createRef(token[1]))
+                items.append(self._create_ref(token[1]))
+            elif token[0] == _EXP:
+                items.append(self._create_exp(token[1]))
+        return items
+
+    def _create_ref(self, tokens):
+        items = []
+        for token in tokens:
+            if token[0] == _STR:
+                items.append(ScaItem(token[1]))
+            elif token[0] == _REF:
+                items.append(self._create_ref(token[1]))
         return RefItem(items, self._delimiter)
 
-    def _createExp(self, tokens):
+    def _create_exp(self, tokens):
         items = []
         for token in tokens:
             items.append(ScaItem(token[1]))
@@ -169,14 +184,3 @@ class Parser(object):
             return ExpItem(items[0], self._delimiter)
         else:
             return ExpItem(CompItem(items), self._delimiter)
-
-    def _createItems(self, tokens):
-        items = []
-        for token in tokens:
-            if token[0] == _STR:
-                items.append(ScaItem(token[1]))
-            elif token[0] == _REF:
-                items.append(self._createRef(token[1]))
-            elif token[0] == _EXP:
-                items.append(self._createExp(token[1]))
-        return items
