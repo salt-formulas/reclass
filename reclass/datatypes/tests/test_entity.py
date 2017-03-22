@@ -154,6 +154,41 @@ class TestEntity(unittest.TestCase):
         d = entity.as_dict()
         self.assertDictEqual(d, comp)
 
+class TestEntityNoMock(unittest.TestCase):
+
+    def test_exports_with_refs(self):
+        exports = Parameters({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
+        exports_entity = Entity(None, None, None, exports)
+        node3_exports = Parameters({'a': '${a}', 'b': '${b}'})
+        node3_parameters = Parameters({'name': 'node3', 'a': '${c}', 'b': 5})
+        node3_parameters.merge({'c': 3})
+        node3_entity = Entity(None, None, node3_parameters, node3_exports)
+        r = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}, 'node3': {'a': 3, 'b': 5}}
+        node3_entity.interpolate('node3', exports)
+        self.assertDictEqual(exports.as_dict(), r)
+
+    def test_reference_to_an_export(self):
+        exports = Parameters({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
+        exports_entity = Entity(None, None, None, exports)
+        node3_exports = Parameters({'a': '${a}', 'b': '${b}'})
+        node3_parameters = Parameters({'name': 'node3', 'ref': '${exp}', 'a': '${c}', 'b': 5})
+        node3_parameters.merge({'c': 3, 'exp': '$[ exports:a ]'})
+        node3_entity = Entity(None, None, node3_parameters, node3_exports)
+        r = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}, 'node3': {'a': 3, 'b': 5}}
+        node3_entity.interpolate('node3', exports)
+        self.assertDictEqual(exports.as_dict(), r)
+
+    def test_exports_with_nested_references(self):
+        exports = Parameters({'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}})
+        exports_entity = Entity(None, None, None, exports)
+        node3_exports = Parameters({'alpha': '${alpha}'})
+        node3_parameters = Parameters({'name': 'node3', 'alpha': {'a': '${one}', 'b': '${two}'}, 'beta': '$[ exports:alpha ]', 'one': '111', 'two': '${three}', 'three': '123'})
+        node3_entity = Entity(None, None, node3_parameters, node3_exports)
+        res_params = {'beta': {'node1': {'a': 1, 'b': 2}, 'node3': {'a': '111', 'b': '123'}, 'node2': {'a': 3, 'b': 4}}, 'name': 'node3', 'alpha': {'a': '111', 'b': '123'}, 'three': '123', 'two': '123', 'one': '111'}
+        res_exps = {'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}, 'node3': {'alpha': {'a': '111', 'b': '123'}}}
+        node3_entity.interpolate('node3', exports)
+        self.assertDictEqual(node3_parameters.as_dict(), res_params)
+        self.assertDictEqual(exports.as_dict(), res_exps)
 
 if __name__ == '__main__':
     unittest.main()
