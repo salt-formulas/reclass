@@ -78,21 +78,21 @@ class Parameters(object):
     def as_dict(self):
         return self._base.copy()
 
-    def _wrap_container(self, container, key, value):
+    def _wrap_value(self, value):
         if isinstance(value, dict):
-            self._wrap_dict(value)
+            return self._wrap_dict(value)
         elif isinstance(value, list):
-            self._wrap_list(value)
-        elif not isinstance(value, (Value, ValueList)):
-            container[key] = Value(value, self._delimiter)
+            return self._wrap_list(value)
+        elif isinstance(value, (Value, ValueList)):
+            return value
+        else:
+            return Value(value, self._delimiter)
 
-    def _wrap_list(self, item_list):
-        for n, value in enumerate(item_list):
-            self._wrap_container(item_list, n, value)
+    def _wrap_list(self, source):
+        return [ self._wrap_value(v) for v in source ]
 
-    def _wrap_dict(self, dictionary):
-        for key, value in dictionary.iteritems():
-            self._wrap_container(dictionary, key, value)
+    def _wrap_dict(self, source):
+        return { k: self._wrap_value(v) for k, v in source.iteritems() }
 
     def _update_value(self, cur, new, path):
         if cur is None:
@@ -186,8 +186,7 @@ class Parameters(object):
 
         self._unrendered = None
         if isinstance(other, dict):
-            wrapped = copy.deepcopy(other)
-            self._wrap_dict(wrapped)
+            wrapped = self._wrap_dict(other)
             self._base = self._merge_recurse(self._base, wrapped, DictPath(self._delimiter))
 
         elif isinstance(other, self.__class__):
