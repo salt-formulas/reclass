@@ -54,7 +54,6 @@ def _export(string, location, tokens):
     tokens[0] = (_EXP, token)
 
 def _get_parser():
-    white_space = pp.White()
     double_escape = pp.Combine(pp.Literal(_DOUBLE_ESCAPE) + pp.MatchFirst([pp.FollowedBy(_REF_OPEN), pp.FollowedBy(_REF_CLOSE)])).setParseAction(pp.replaceWith(_ESCAPE))
 
     ref_open = pp.Literal(_REF_OPEN).suppress()
@@ -63,9 +62,9 @@ def _get_parser():
     ref_not_close = ~pp.Literal(_REF_CLOSE) + ~pp.Literal(_REF_ESCAPE_CLOSE) + ~pp.Literal(_REF_DOUBLE_ESCAPE_CLOSE)
     ref_escape_open = pp.Literal(_REF_ESCAPE_OPEN).setParseAction(pp.replaceWith(_REF_OPEN))
     ref_escape_close = pp.Literal(_REF_ESCAPE_CLOSE).setParseAction(pp.replaceWith(_REF_CLOSE))
-    ref_text = pp.MatchFirst([pp.Word(pp.printables, excludeChars=_REF_EXCLUDES), pp.CharsNotIn(_REF_CLOSE_FIRST, exact=1)])
+    ref_text = pp.CharsNotIn(_REF_EXCLUDES) | pp.CharsNotIn(_REF_CLOSE_FIRST, exact=1)
     ref_content = pp.Combine(pp.OneOrMore(ref_not_open + ref_not_close + ref_text))
-    ref_string = pp.MatchFirst([double_escape, ref_escape_open, ref_escape_close, ref_content, white_space]).setParseAction(_string)
+    ref_string = pp.MatchFirst([double_escape, ref_escape_open, ref_escape_close, ref_content]).setParseAction(_string)
     ref_item = pp.Forward()
     ref_items = pp.OneOrMore(ref_item)
     reference = (ref_open + pp.Group(ref_items) + ref_close).setParseAction(_reference)
@@ -77,15 +76,15 @@ def _get_parser():
     exp_not_close = ~pp.Literal(_EXP_CLOSE) + ~pp.Literal(_EXP_ESCAPE_CLOSE) + ~pp.Literal(_EXP_DOUBLE_ESCAPE_CLOSE)
     exp_escape_open = pp.Literal(_EXP_ESCAPE_OPEN).setParseAction(pp.replaceWith(_EXP_OPEN))
     exp_escape_close = pp.Literal(_EXP_ESCAPE_CLOSE).setParseAction(pp.replaceWith(_EXP_CLOSE))
-    exp_text = pp.Word(pp.printables, excludeChars=_EXP_CLOSE_FIRST)
+    exp_text = pp.CharsNotIn(_EXP_CLOSE_FIRST)
     exp_content = pp.Combine(pp.OneOrMore(exp_not_close + exp_text))
-    exp_string = pp.MatchFirst([double_escape, exp_escape_open, exp_escape_close, exp_content, white_space]).setParseAction(_string)
+    exp_string = pp.MatchFirst([double_escape, exp_escape_open, exp_escape_close, exp_content]).setParseAction(_string)
     exp_items = pp.OneOrMore(exp_string)
     export = (exp_open + pp.Group(exp_items) + exp_close).setParseAction(_export)
 
-    text = pp.MatchFirst([pp.Word(pp.printables, excludeChars=_EXCLUDES), pp.CharsNotIn('', exact=1)])
+    text = pp.CharsNotIn(_EXCLUDES) | pp.CharsNotIn('', exact=1)
     content = pp.Combine(pp.OneOrMore(ref_not_open + exp_not_open + text))
-    string = pp.MatchFirst([double_escape, ref_escape_open, exp_escape_open, content, white_space]).setParseAction(_string)
+    string = pp.MatchFirst([double_escape, ref_escape_open, exp_escape_open, content]).setParseAction(_string)
 
     item = reference | export | string
     line = pp.OneOrMore(item) + pp.StringEnd()
