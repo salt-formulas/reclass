@@ -7,9 +7,7 @@
 import pyparsing as pp
 
 from compitem import CompItem
-from dictitem import DictItem
 from expitem import ExpItem
-from listitem import ListItem
 from refitem import RefItem
 from scaitem import ScaItem
 
@@ -109,17 +107,6 @@ class Parser(object):
 
     def parse(self, value, delimiter):
         self._delimiter = delimiter
-
-        if isinstance(value, str):
-            return self._parse_string(value)
-        elif isinstance(value, list):
-            return ListItem(value)
-        elif isinstance(value, dict):
-            return DictItem(value)
-        else:
-            return ScaItem(value)
-
-    def _parse_string(self, value):
         dollars = value.count('$')
         if dollars == 0:
             # speed up: only use pyparsing if there is a $ in the string

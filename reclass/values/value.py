@@ -5,15 +5,25 @@
 #
 
 from parser import Parser
+from dictitem import DictItem
+from listitem import ListItem
+from scaitem import ScaItem
 from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER
 
 class Value(object):
 
     _parser = Parser()
 
-    def __init__(self, val, delimiter=PARAMETER_INTERPOLATION_DELIMITER):
+    def __init__(self, value, delimiter=PARAMETER_INTERPOLATION_DELIMITER):
         self._delimiter = delimiter
-        self._item = self._parser.parse(val, self._delimiter)
+        if isinstance(value, str):
+            self._item = self._parser.parse(value, delimiter)
+        elif isinstance(value, list):
+            self._item = ListItem(value)
+        elif isinstance(value, dict):
+            self._item = DictItem(value)
+        else:
+            self._item = ScaItem(value)
 
     def is_container(self):
         return self._item.is_container()
