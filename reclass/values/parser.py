@@ -94,14 +94,10 @@ def _get_parser():
     return line
 
 def _get_simple_ref_parser():
-    white_space = pp.White()
-    text = pp.Word(pp.printables, excludeChars=_EXCLUDES)
-    string = pp.Combine(pp.OneOrMore(text | white_space)).setParseAction(_string)
-
+    string = pp.CharsNotIn(_EXCLUDES).setParseAction(_string)
     ref_open = pp.Literal(_REF_OPEN).suppress()
     ref_close = pp.Literal(_REF_CLOSE).suppress()
     reference = (ref_open + pp.Group(string) + ref_close).setParseAction(_reference)
-
     line = pp.StringStart() + pp.Optional(string) + reference + pp.Optional(string) + pp.StringEnd()
     return line
 
@@ -115,14 +111,13 @@ class Parser(object):
         self._delimiter = delimiter
 
         if isinstance(value, str):
-            item = self._parse_string(value)
+            return self._parse_string(value)
         elif isinstance(value, list):
-            item = ListItem(value)
+            return ListItem(value)
         elif isinstance(value, dict):
-            item = DictItem(value)
+            return DictItem(value)
         else:
-            item = ScaItem(value)
-        return item
+            return ScaItem(value)
 
     def _parse_string(self, value):
         dollars = value.count('$')
