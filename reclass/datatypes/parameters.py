@@ -95,9 +95,6 @@ class Parameters(object):
         return { k: self._wrap_value(v) for k, v in source.iteritems() }
 
     def _update_value(self, cur, new, path):
-        if cur is None:
-            return new
-
         if isinstance(cur, Value):
             values = ValueList(cur)
         elif isinstance(cur, ValueList):
@@ -162,11 +159,10 @@ class Parameters(object):
         """
 
 
-        if isinstance(new, dict) and (cur is None or isinstance(cur, dict)):
-            if cur is None:
-                cur = {}
+        if cur is None:
+            return new
+        elif isinstance(new, dict) and isinstance(cur, dict):
             return self._merge_dict(cur, new, path)
-
         else:
             return self._update_value(cur, new, path)
 

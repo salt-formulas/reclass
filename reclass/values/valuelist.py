@@ -8,12 +8,10 @@ import copy
 
 class ValueList(object):
 
-    def __init__(self, value=None):
+    def __init__(self, value):
         self._refs = []
         self._allRefs = True
-        self._values = []
-        if value is not None:
-            self._values.append(value)
+        self._values = [ value ]
         self.assembleRefs()
         self._has_exports = False
         self._check_for_exports()
@@ -63,8 +61,8 @@ class ValueList(object):
     def merge(self, options):
         output = None
         for n, value in enumerate(self._values):
-            if n is 0:
-                output = self._values[0]
+            if output is None:
+                output = value
             else:
                 output = value.merge_over(output, options)
         return output

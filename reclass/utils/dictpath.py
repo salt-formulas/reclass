@@ -59,12 +59,12 @@ class DictPath(object):
         if contents is None:
             self._parts = []
         else:
-            if isinstance(contents, types.StringTypes):
+            if isinstance(contents, list):
+                self._parts = contents
+            elif isinstance(contents, types.StringTypes):
                 self._parts = self._split_string(contents)
             elif isinstance(contents, tuple):
                 self._parts = list(contents)
-            elif isinstance(contents, list):
-                self._parts = contents
             else:
                 raise TypeError('DictPath() takes string or list, '\
                                 'not %s' % type(contents))
