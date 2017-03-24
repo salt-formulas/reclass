@@ -401,10 +401,28 @@ class TestParametersNoMock(unittest.TestCase):
         p1.interpolate()
         self.assertEqual(p1.as_dict(), r)
 
+    def test_merging_for_multiple_nodes(self):
+        p1 = Parameters({ 'alpha': { 'one': 111 }})
+        p2 = Parameters({ 'beta': {'two': '${alpha:one}' }})
+        p3 = Parameters({ 'beta': {'two': 222 }})
+        n1 = Parameters({ 'name': 'node1'})
+        r1 = { 'alpha': { 'one': 111 }, 'beta': { 'two': 111 }, 'name': 'node1' }
+        r2 = { 'alpha': { 'one': 111 }, 'beta': { 'two': 222 }, 'name': 'node2' }
+        n1.merge(p1)
+        n1.merge(p2)
+        n1.interpolate()
+        n2 = Parameters({'name': 'node2'})
+        n2.merge(p1)
+        n2.merge(p2)
+        n2.merge(p3)
+        n2.interpolate()
+        self.assertEqual(n1.as_dict(), r1)
+        self.assertEqual(n2.as_dict(), r2)
+
     def test_list_merging_for_multiple_nodes(self):
         p1 = Parameters({ 'alpha': { 'one': [1, 2] }})
         p2 = Parameters({ 'beta': {'two': '${alpha:one}' }})
-        p3 = Parameters({'beta': {'two': [3] }})
+        p3 = Parameters({ 'beta': {'two': [3] }})
         n1 = Parameters({ 'name': 'node1'})
         r1 = { 'alpha': { 'one': [1, 2] }, 'beta': { 'two': [1, 2] }, 'name': 'node1' }
         r2 = { 'alpha': { 'one': [1, 2] }, 'beta': { 'two': [1, 2, 3] }, 'name': 'node2' }
@@ -422,7 +440,7 @@ class TestParametersNoMock(unittest.TestCase):
     def test_dict_merging_for_multiple_nodes(self):
         p1 = Parameters({ 'alpha': { 'one': { 'a': 'aa', 'b': 'bb' }}})
         p2 = Parameters({ 'beta': {'two': '${alpha:one}' }})
-        p3 = Parameters({'beta': {'two': {'c': 'cc' }}})
+        p3 = Parameters({ 'beta': {'two': {'c': 'cc' }}})
         n1 = Parameters({ 'name': 'node1'})
         r1 = { 'alpha': { 'one': {'a': 'aa', 'b': 'bb'} }, 'beta': { 'two': {'a': 'aa', 'b': 'bb'} }, 'name': 'node1' }
         r2 = { 'alpha': { 'one': {'a': 'aa', 'b': 'bb'} }, 'beta': { 'two': {'a': 'aa', 'b': 'bb', 'c': 'cc'} }, 'name': 'node2' }
