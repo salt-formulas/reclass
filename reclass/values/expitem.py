@@ -76,7 +76,7 @@ class ExpItem(Item):
     def __init__(self, item, delimiter):
         self.type = Item.EXPORT
         self._delimiter = delimiter
-        self._type = None
+        self._expr_type = None
         self._refs = []
         self._expr = []
         self._parse_expression(item.render(None, None))
@@ -88,12 +88,12 @@ class ExpItem(Item):
             raise ParseError(e.msg, e.line, e.col, e.lineno)
 
         if len(tokens) == 1:
-            self._type = tokens[0][0]
-            self._expr = tokens[0][1]
+            self._expr_type = tokens[0][0]
+            self._expr = list(tokens[0][1])
         else:
             raise ExpressionError('Failed to parse %s' % str(expr))
 
-        if self._type == _TEST:
+        if self._expr_type == _TEST:
             export, parameter, value = self._get_vars(self._expr[2][1], None, None, None)
             export, parameter, value = self._get_vars(self._expr[4][1], export, parameter, value)
             if parameter is not None:
@@ -182,9 +182,9 @@ class ExpItem(Item):
         return export, parameter, value
 
     def render(self, context, exports):
-        if self._type == _VALUE:
+        if self._expr_type == _VALUE:
             return self._value_expression(exports)
-        elif self._type == _TEST:
+        elif self._expr_type == _TEST:
             return self._test_expression(context, exports)
         raise ExpressionError('Failed to render %s' % str(self))
 
