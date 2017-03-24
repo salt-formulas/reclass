@@ -183,14 +183,12 @@ class Parameters(object):
         self._unrendered = None
         if isinstance(other, dict):
             wrapped = self._wrap_dict(other)
-            self._base = self._merge_recurse(self._base, wrapped, DictPath(self._delimiter))
-
         elif isinstance(other, self.__class__):
-            self._base = self._merge_recurse(self._base, other._base, DictPath(self._delimiter))
-
+            wrapped = self._wrap_dict(other._base)
         else:
             raise TypeError('Cannot merge %s objects into %s' % (type(other),
                             self.__class__.__name__))
+        self._base = self._merge_recurse(self._base, wrapped, DictPath(self._delimiter))
 
     def render_simple(self, options=None):
         self._unrendered = None
