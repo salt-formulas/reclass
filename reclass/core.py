@@ -160,9 +160,7 @@ class Core(object):
         return ret
 
     def _update_exports(self, old, new):
-        old_yaml = yaml.dump(old.as_dict(), default_flow_style=True, Dumper=ExplicitDumper)
-        new_yaml = yaml.dump(new.as_dict(), default_flow_style=True, Dumper=ExplicitDumper)
-        if old_yaml != new_yaml:
+        if old != new:
             self._storage.put_exports(new)
             return True
         else:
