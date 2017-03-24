@@ -460,10 +460,10 @@ class TestParametersNoMock(unittest.TestCase):
         p2 = Parameters({ 'beta': { 'three': '${alpha:one}' }})
         p3 = Parameters({ 'beta': { 'three': '${alpha:two}' }})
         p4 = Parameters({ 'beta': { 'three': '${alpha:one}' }})
-        n1 = Parameters({ 'name': 'node1'})
+        n1 = Parameters({ 'name': 'node1' })
         r1 = {'alpha': {'one': [1, 2], 'two': [3, 4]}, 'beta': {'three': [1, 2]}, 'name': 'node1'}
         r2 = {'alpha': {'one': [1, 2], 'two': [3, 4]}, 'beta': {'three': [1, 2, 3, 4, 1, 2]}, 'name': 'node2'}
-        n2 = Parameters({'name': 'node2'})
+        n2 = Parameters({ 'name': 'node2' })
         n2.merge(p1)
         n2.merge(p2)
         n2.merge(p3)
@@ -472,6 +472,26 @@ class TestParametersNoMock(unittest.TestCase):
         n1.merge(p1)
         n1.merge(p2)
         n1.interpolate()
+        self.assertEqual(n1.as_dict(), r1)
+        self.assertEqual(n2.as_dict(), r2)
+
+    def test_nested_refs_with_multiple_nodes(self):
+        p1 = Parameters({ 'alpha': { 'one': 1, 'two': 2 } })
+        p2 = Parameters({ 'beta': { 'three': 'one' } })
+        p3 = Parameters({ 'beta': { 'three': 'two' } })
+        p4 = Parameters({ 'beta': { 'four': '${alpha:${beta:three}}' } })
+        n1 = Parameters({ 'name': 'node1' })
+        r1 = {'alpha': {'one': 1, 'two': 2}, 'beta': {'three': 'one', 'four': 1}, 'name': 'node1'}
+        r2 = {'alpha': {'one': 1, 'two': 2}, 'beta': {'three': 'two', 'four': 2}, 'name': 'node2'}
+        n1.merge(p1)
+        n1.merge(p4)
+        n1.merge(p2)
+        n1.interpolate()
+        n2 = Parameters({ 'name': 'node2' })
+        n2.merge(p1)
+        n2.merge(p4)
+        n2.merge(p3)
+        n2.interpolate()
         self.assertEqual(n1.as_dict(), r1)
         self.assertEqual(n2.as_dict(), r2)
 
