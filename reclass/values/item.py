@@ -11,7 +11,7 @@ class Item(object):
 
     COMPOSITE = 1
     DICTIONARY = 2
-    EXPORT = 3
+    INV_QUERY = 3
     LIST = 4
     REFERENCE = 5
     SCALAR = 6

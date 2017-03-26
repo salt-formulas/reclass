@@ -7,7 +7,7 @@
 import pyparsing as pp
 
 from compitem import CompItem
-from expitem import ExpItem
+from invitem import InvItem
 from refitem import RefItem
 from scaitem import ScaItem
 
@@ -158,6 +158,6 @@ class Parser(object):
         for token in tokens:
             items.append(ScaItem(token[1]))
         if len(items) == 1:
-            return ExpItem(items[0], self._delimiter)
+            return InvItem(items[0], self._delimiter)
         else:
-            return ExpItem(CompItem(items), self._delimiter)
+            return InvItem(CompItem(items), self._delimiter)

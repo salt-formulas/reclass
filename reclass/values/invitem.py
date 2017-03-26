@@ -20,7 +20,7 @@ _IF = 'IF'
 _EQUAL = '=='
 _NOT_EQUAL = '!='
 
-class ExpItem(Item):
+class InvItem(Item):
 
     def _get_parser():
 
@@ -74,7 +74,7 @@ class ExpItem(Item):
     _parser = _get_parser()
 
     def __init__(self, item, delimiter):
-        self.type = Item.EXPORT
+        self.type = Item.INV_QUERY
         self._delimiter = delimiter
         self._expr_type = None
         self._refs = []
@@ -83,7 +83,7 @@ class ExpItem(Item):
 
     def _parse_expression(self, expr):
         try:
-            tokens = ExpItem._parser.parseString(expr).asList()
+            tokens = InvItem._parser.parseString(expr).asList()
         except pp.ParseException as e:
             raise ParseError(e.msg, e.line, e.col, e.lineno)
 
@@ -192,4 +192,4 @@ class ExpItem(Item):
         return ' '.join(str(j) for i,j in self._expr)
 
     def __repr__(self):
-        return 'ExpItem(%r)' % self._expr
+        return 'InvItem(%r)' % self._expr
