@@ -25,6 +25,8 @@ class RefItem(Item):
             if item.has_references():
                 item.assembleRefs(context)
                 self._refs.extend(item.get_references())
+                if item.allRefs() == False:
+                    self._allRefs = False
         try:
             strings = [ str(i.render(context, None)) for i in self._items ]
             value = "".join(strings)
