@@ -34,11 +34,11 @@ class Value(object):
     def has_references(self):
         return self._item.has_references()
 
-    def has_exports(self):
-        return self._item.has_exports()
+    def has_inv_query(self):
+        return self._item.has_inv_query()
 
     def is_complex(self):
-        return (self.has_references() | self.has_exports())
+        return self._item.is_complex()
 
     def get_references(self):
         return self._item.get_references()

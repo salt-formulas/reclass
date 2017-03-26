@@ -107,7 +107,7 @@ class InvItem(Item):
     def contents(self):
         return self._expr
 
-    def has_exports(self):
+    def has_inv_query(self):
         return True
 
     def has_references(self):

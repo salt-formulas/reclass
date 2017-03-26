@@ -22,14 +22,14 @@ class Item(object):
     def has_references(self):
         return False
 
-    def has_exports(self):
+    def has_inv_query(self):
         return False
 
     def is_container(self):
         return False
 
-    def is_complex():
-        return (self.has_references | self.has_exports)
+    def is_complex(self):
+        return (self.has_references() | self.has_inv_query())
 
     def contents(self):
         msg = "Item class {0} does not implement contents()"

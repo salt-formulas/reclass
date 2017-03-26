@@ -13,8 +13,8 @@ class ValueList(object):
         self._allRefs = True
         self._values = [ value ]
         self.assembleRefs()
-        self._has_exports = False
-        self._check_for_exports()
+        self._has_env_query = False
+        self._check_for_inv_query()
 
     def append(self, value):
         self._values.append(value)
@@ -30,11 +30,11 @@ class ValueList(object):
     def has_references(self):
         return len(self._refs) > 0
 
-    def has_exports(self):
-        return self._has_exports
+    def has_inv_query(self):
+        return self._has_inv_query
 
     def is_complex(self):
-        return (self.has_references() | self.has_exports())
+        return (self.has_references() | self.has_inv_query())
 
     def get_references(self):
         return self._refs
@@ -42,11 +42,11 @@ class ValueList(object):
     def allRefs(self):
         return self._allRefs
 
-    def _check_for_exports(self):
-        self._has_exports = False
+    def _check_for_inv_query(self):
+        self._has_inv_query = False
         for value in self._values:
-            if value.has_exports():
-                self._has_exports = True
+            if value.has_inv_query():
+                self._has_inv_query = True
 
     def assembleRefs(self, context={}):
         self._refs = []
