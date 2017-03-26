@@ -145,7 +145,7 @@ class TestParametersNoMock(unittest.TestCase):
         p = Parameters(SIMPLE)
         mergee = {'five':5,'four':4,'None':None,'tuple':(1,2,3)}
         p.merge(mergee)
-        p.render_simple()
+        p.initialise_interpolation()
         goal = SIMPLE.copy()
         goal.update(mergee)
         self.assertDictEqual(p.as_dict(), goal)
@@ -154,7 +154,7 @@ class TestParametersNoMock(unittest.TestCase):
         p = Parameters(SIMPLE)
         mergee = {'two':5,'four':4,'three':None,'one':(1,2,3)}
         p.merge(mergee)
-        p.render_simple()
+        p.initialise_interpolation()
         goal = SIMPLE.copy()
         goal.update(mergee)
         self.assertDictEqual(p.as_dict(), goal)
@@ -165,7 +165,7 @@ class TestParametersNoMock(unittest.TestCase):
         p1 = Parameters(dict(list=l1[:]))
         p2 = Parameters(dict(list=l2))
         p1.merge(p2)
-        p1.render_simple()
+        p1.initialise_interpolation()
         self.assertListEqual(p1.as_dict()['list'], l1+l2)
 
     def test_merge_list_into_scalar(self):
@@ -174,7 +174,7 @@ class TestParametersNoMock(unittest.TestCase):
         options.allow_list_over_scalar = True
         p1 = Parameters(dict(key=l[0]))
         p1.merge(Parameters(dict(key=l[1:])))
-        p1.render_simple(options)
+        p1.initialise_interpolation(options)
         self.assertListEqual(p1.as_dict()['key'], l)
 
     def test_merge_scalar_over_list(self):
@@ -183,14 +183,14 @@ class TestParametersNoMock(unittest.TestCase):
         options.allow_scalar_over_list = True
         p1 = Parameters(dict(key=l[:2]))
         p1.merge(Parameters(dict(key=l[2])))
-        p1.render_simple(options)
+        p1.initialise_interpolation(options)
         self.assertEqual(p1.as_dict()['key'], l[2])
 
     def test_merge_dicts(self):
         mergee = {'five':5,'four':4,'None':None,'tuple':(1,2,3)}
         p = Parameters(dict(dict=SIMPLE))
         p.merge(Parameters(dict(dict=mergee)))
-        p.render_simple()
+        p.initialise_interpolation()
         goal = SIMPLE.copy()
         goal.update(mergee)
         self.assertDictEqual(p.as_dict(), dict(dict=goal))
@@ -199,7 +199,7 @@ class TestParametersNoMock(unittest.TestCase):
         mergee = {'two':5,'four':4,'three':None,'one':(1,2,3)}
         p = Parameters(dict(dict=SIMPLE))
         p.merge(Parameters(dict(dict=mergee)))
-        p.render_simple()
+        p.initialise_interpolation()
         goal = SIMPLE.copy()
         goal.update(mergee)
         self.assertDictEqual(p.as_dict(), dict(dict=goal))
@@ -214,7 +214,7 @@ class TestParametersNoMock(unittest.TestCase):
                 'two': ['gamma']}
         p = Parameters(dict(dict=base))
         p.merge(Parameters(dict(dict=mergee)))
-        p.render_simple()
+        p.initialise_interpolation()
         self.assertDictEqual(p.as_dict(), dict(dict=goal))
 
     def test_merge_dict_into_scalar(self):
@@ -229,7 +229,7 @@ class TestParametersNoMock(unittest.TestCase):
         options = MergeOptions()
         options.allow_scalar_over_dict = True
         p.merge(Parameters(mergee))
-        p.render_simple(options)
+        p.initialise_interpolation(options)
         self.assertDictEqual(p.as_dict(), mergee)
 
     def test_interpolate_single(self):
@@ -359,7 +359,7 @@ class TestParametersNoMock(unittest.TestCase):
         d = {'foo': ESCAPE_CHARACTER + 'bar'.join(REFERENCE_SENTINELS),
              'bar': 'unused'}
         p = Parameters(d)
-        p.render_simple()
+        p.initialise_interpolation()
         self.assertEqual(p.as_dict()['foo'], v)
 
     def test_interpolate_double_escaping(self):
@@ -385,7 +385,7 @@ class TestParametersNoMock(unittest.TestCase):
             ])
         d = {'foo': v}
         p = Parameters(d)
-        p.render_simple()
+        p.initialise_interpolation()
         self.assertEqual(p.as_dict()['foo'], v)
 
     def test_escape_close_in_ref(self):

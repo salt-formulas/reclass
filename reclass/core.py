@@ -135,7 +135,15 @@ class Core(object):
         else:
             return Parameters()
 
-    def _nodeinfo(self, nodename, exports):
+    def _get_inventory(self):
+        inventory = {}
+        for nodename in self._storage.enumerate_nodes():
+            node = self._node_entity(nodename)
+            node.interpolate_exports()
+            inventory[nodename] = node.exports.as_dict()
+        return inventory
+
+    def _node_entity(self, nodename):
         node_entity = self._storage.get_node(nodename)
         base_entity = Entity(name='base')
         base_entity.merge(self._get_class_mappings_entity(node_entity.name))
@@ -144,9 +152,18 @@ class Core(object):
         seen = {}
         merge_base = self._recurse_entity(base_entity, seen=seen,
                                           nodename=base_entity.name)
-        ret = self._recurse_entity(node_entity, merge_base, seen=seen,
+        return self._recurse_entity(node_entity, merge_base, seen=seen,
                                    nodename=node_entity.name)
-        ret.interpolate(nodename, exports)
+
+    def _nodeinfo(self, nodename, inventory):
+        ret = self._node_entity(nodename)
+        ret.initialise_interpolation()
+        if ret.parameters.has_inv_query():
+            if inventory is None:
+                inventory = self._get_inventory()
+            ret.interpolate(nodename, inventory)
+        else:
+            ret.interpolate(nodename, None)
         return ret
 
     def _nodeinfo_as_dict(self, nodename, entity):
@@ -159,40 +176,19 @@ class Core(object):
         ret.update(entity.as_dict())
         return ret
 
-    def _update_exports(self, old, new):
-        if old != new:
-            self._storage.put_exports(new)
-            return True
-        else:
-            return False
-
     def nodeinfo(self, nodename):
-        original_exports = Exports(self._storage.get_exports())
-        exports = copy.deepcopy(original_exports)
-        original_exports.render_simple()
-        ret = self._nodeinfo_as_dict(nodename, self._nodeinfo(nodename, exports))
-        self._update_exports(original_exports, exports)
-        return ret
+        return self._nodeinfo_as_dict(nodename, self._nodeinfo(nodename, None))
 
     def inventory(self):
-        original_exports = Exports(self._storage.get_exports())
-        exports = copy.deepcopy(original_exports)
-        original_exports.render_simple()
-        nodes = { key for key in exports.as_dict()}
+        query_nodes = set()
         entities = {}
+        inventory = self._get_inventory()
         for n in self._storage.enumerate_nodes():
-            entities[n] = self._nodeinfo(n, exports)
-            nodes.discard(n)
-        for n in nodes:
-            exports.delete_key(n)
-        changed = self._update_exports(original_exports, exports)
-        if changed:
-            # use brute force: if the exports have changed rerun
-            # the inventory cacluation
-            #exports = Parameters(exports.as_dict())
-            entities = {}
-            for n in self._storage.enumerate_nodes():
-                entities[n] = self._nodeinfo(n, exports)
+            entities[n] = self._nodeinfo(n, inventory)
+            if entities[n].parameters.has_inv_query():
+                nodes.add(n)
+        for n in query_nodes:
+            entities[n] = self._nodeinfo(n, inventory)
 
         nodes = {}
         applications = {}

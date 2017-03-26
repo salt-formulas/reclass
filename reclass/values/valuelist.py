@@ -12,20 +12,21 @@ class ValueList(object):
         self._refs = []
         self._allRefs = True
         self._values = [ value ]
-        self.assembleRefs()
-        self._has_env_query = False
-        self._check_for_inv_query()
+        self._has_inv_query = False
+        self._update()
 
     def append(self, value):
         self._values.append(value)
-        if value.has_references():
-            self._refs.extend(value.get_references())
-        if value.allRefs() is False:
-            self._allRefs = False
+        self._update()
 
     def extend(self, values):
         self._values.extend(values._values)
+        self._update()
+
+    def _update(self):
+        self._has_inv_query = False
         self.assembleRefs()
+        self._check_for_inv_query()
 
     def has_references(self):
         return len(self._refs) > 0

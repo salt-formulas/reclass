@@ -158,38 +158,42 @@ class TestEntity(unittest.TestCase):
 class TestEntityNoMock(unittest.TestCase):
 
     def test_exports_with_refs(self):
-        exports = Exports({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
-        exports_entity = Entity(None, None, None, exports)
+        inventory = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}}
         node3_exports = Exports({'a': '${a}', 'b': '${b}'})
         node3_parameters = Parameters({'name': 'node3', 'a': '${c}', 'b': 5})
         node3_parameters.merge({'c': 3})
         node3_entity = Entity(None, None, node3_parameters, node3_exports)
+        node3_entity.interpolate_exports()
+        inventory['node3'] = node3_entity.exports.as_dict()
         r = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}, 'node3': {'a': 3, 'b': 5}}
-        node3_entity.interpolate('node3', exports)
-        self.assertDictEqual(exports.as_dict(), r)
+        self.assertDictEqual(inventory, r)
 
     def test_reference_to_an_export(self):
-        exports = Exports({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
-        exports_entity = Entity(None, None, None, exports)
+        inventory = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}}
         node3_exports = Exports({'a': '${a}', 'b': '${b}'})
         node3_parameters = Parameters({'name': 'node3', 'ref': '${exp}', 'a': '${c}', 'b': 5})
         node3_parameters.merge({'c': 3, 'exp': '$[ exports:a ]'})
         node3_entity = Entity(None, None, node3_parameters, node3_exports)
-        r = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}, 'node3': {'a': 3, 'b': 5}}
-        node3_entity.interpolate('node3', exports)
-        self.assertDictEqual(exports.as_dict(), r)
+        node3_entity.interpolate_exports()
+        inventory['node3'] = node3_entity.exports.as_dict()
+        node3_entity.interpolate('node3', inventory)
+        res_inv = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}, 'node3': {'a': 3, 'b': 5}}
+        res_params = {'a': 3, 'c': 3, 'b': 5, 'name': 'node3', 'exp': {'node1': 1, 'node3': 3, 'node2': 3}, 'ref': {'node1': 1, 'node3': 3, 'node2': 3}}
+        self.assertDictEqual(node3_parameters.as_dict(), res_params)
+        self.assertDictEqual(inventory, res_inv)
 
     def test_exports_with_nested_references(self):
-        exports = Exports({'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}})
-        exports_entity = Entity(None, None, None, exports)
+        inventory = {'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}}
         node3_exports = Exports({'alpha': '${alpha}'})
         node3_parameters = Parameters({'name': 'node3', 'alpha': {'a': '${one}', 'b': '${two}'}, 'beta': '$[ exports:alpha ]', 'one': '111', 'two': '${three}', 'three': '123'})
         node3_entity = Entity(None, None, node3_parameters, node3_exports)
         res_params = {'beta': {'node1': {'a': 1, 'b': 2}, 'node3': {'a': '111', 'b': '123'}, 'node2': {'a': 3, 'b': 4}}, 'name': 'node3', 'alpha': {'a': '111', 'b': '123'}, 'three': '123', 'two': '123', 'one': '111'}
-        res_exps = {'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}, 'node3': {'alpha': {'a': '111', 'b': '123'}}}
-        node3_entity.interpolate('node3', exports)
+        res_inv = {'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}, 'node3': {'alpha': {'a': '111', 'b': '123'}}}
+        node3_entity.interpolate_exports()
+        inventory['node3'] = node3_entity.exports.as_dict()
+        node3_entity.interpolate('node3', inventory)
         self.assertDictEqual(node3_parameters.as_dict(), res_params)
-        self.assertDictEqual(exports.as_dict(), res_exps)
+        self.assertDictEqual(inventory, res_inv)
 
 if __name__ == '__main__':
     unittest.main()

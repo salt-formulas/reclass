@@ -194,10 +194,6 @@ class Parameters(object):
                             self.__class__.__name__))
         self._base = self._merge_recurse(self._base, wrapped, DictPath(self._delimiter))
 
-    def render_simple(self, options=None):
-        self._unrendered = None
-        self._initialise_interpolate(options)
-
     def _render_simple_container(self, container, key, value, path):
             if isinstance(value, ValueList):
                 if value.is_complex():
@@ -218,6 +214,8 @@ class Parameters(object):
             elif isinstance(value, Value):
                 if value.is_complex():
                     self._unrendered[path.new_subpath(key)] = True
+                    if value.has_inv_query():
+                        self._has_inv_query = True
                 else:
                     container[key] = value.render(None, None, self._options)
 
@@ -229,14 +227,18 @@ class Parameters(object):
         for n, value in enumerate(item_list):
             self._render_simple_container(item_list, n, value, path)
 
-    def interpolate(self, exports=None, options=None):
-        self._initialise_interpolate(options)
+    def interpolate(self, exports=None):
+        self._initialise_interpolate(self._options)
         while len(self._unrendered) > 0:
             # we could use a view here, but this is simple enough:
             # _interpolate_inner removes references from the refs hash after
             # processing them, so we cannot just iterate the dict
             path, v = self._unrendered.iteritems().next()
             self._interpolate_inner(path, exports)
+
+    def initialise_interpolation(self, options=None):
+        self._unrendered = None
+        self._initialise_interpolate(options)
 
     def _initialise_interpolate(self, options):
         if options is None:

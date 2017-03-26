@@ -17,7 +17,7 @@ class TestExportsNoMock(unittest.TestCase):
         e = Exports({'alpha': { 'one': 1, 'two': 2}})
         d = {'alpha': { 'three': 3, 'four': 4}}
         e.overwrite(d)
-        e.render_simple()
+        e.initialise_interpolation()
         self.assertEqual(e.as_dict(), d)
 
     def test_value_expr_exports(self):
