@@ -52,6 +52,7 @@ class Parameters(object):
         self._unrendered = None
         self._escapes_handled = {}
         self._options = None
+        self._has_inv_query = False
         if mapping is not None:
             # we initialise by merging
             self._keep_overrides = True
@@ -74,6 +75,9 @@ class Parameters(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def has_inv_query(self):
+        return self._has_inv_query
 
     def as_dict(self):
         return self._base.copy()
@@ -198,6 +202,8 @@ class Parameters(object):
             if isinstance(value, ValueList):
                 if value.is_complex():
                     self._unrendered[path.new_subpath(key)] = True
+                    if value.has_inv_query():
+                        self._has_inv_query = True
                     return
                 else:
                     value = value.merge(self._options)
@@ -240,6 +246,7 @@ class Parameters(object):
 
         if self._unrendered is None:
             self._unrendered = {}
+            self._has_inv_query = False
             self._render_simple_dict(self._base, DictPath(self._delimiter))
 
     def _interpolate_inner(self, path, exports):
