@@ -53,10 +53,10 @@ class RefItem(Item):
         except KeyError as e:
             raise UndefinedVariableError(ref)
 
-    def render(self, context, exports):
+    def render(self, context, inventory):
         if len(self._items) == 1:
-            return self._resolve(self._items[0].render(context, exports), context)
-        strings = [ str(i.render(context, exports)) for i in self._items ]
+            return self._resolve(self._items[0].render(context, inventory), context)
+        strings = [ str(i.render(context, inventory)) for i in self._items ]
         return self._resolve("".join(strings), context)
 
     def __repr__(self):

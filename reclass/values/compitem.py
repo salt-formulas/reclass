@@ -37,12 +37,12 @@ class CompItem(Item):
     def get_references(self):
         return self._refs
 
-    def render(self, context, exports):
+    def render(self, context, inventory):
         # Preserve type if only one item
         if len(self._items) == 1:
-            return self._items[0].render(context, exports)
+            return self._items[0].render(context, inventory)
         # Multiple items
-        strings = [ str(i.render(context, exports)) for i in self._items ]
+        strings = [ str(i.render(context, inventory)) for i in self._items ]
         return "".join(strings)
 
     def __repr__(self):

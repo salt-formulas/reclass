@@ -47,8 +47,8 @@ class Value(object):
         if self._item.has_references():
             self._item.assembleRefs(context)
 
-    def render(self, context, exports, options=None):
-        return self._item.render(context, exports)
+    def render(self, context, inventory, options=None):
+        return self._item.render(context, inventory)
 
     def contents(self):
         return self._item.contents()

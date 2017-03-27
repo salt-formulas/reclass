@@ -68,17 +68,17 @@ class ValueList(object):
                 output = value.merge_over(output, options)
         return output
 
-    def render(self, context, exports, options):
+    def render(self, context, inventory, options):
         from reclass.datatypes.parameters import Parameters
 
         output = None
         deepCopied = False
         for n, value in enumerate(self._values):
             if output is None:
-                output = self._values[n].render(context, exports, options)
+                output = self._values[n].render(context, inventory)
                 deepCopied = False
             else:
-                new = value.render(context, exports, options)
+                new = value.render(context, inventory)
                 if isinstance(output, dict) and isinstance(new, dict):
                     p1 = Parameters(output, value._delimiter)
                     p2 = Parameters(new, value._delimiter)

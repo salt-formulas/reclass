@@ -227,14 +227,14 @@ class Parameters(object):
         for n, value in enumerate(item_list):
             self._render_simple_container(item_list, n, value, path)
 
-    def interpolate(self, exports=None):
+    def interpolate(self, inventory=None):
         self._initialise_interpolate(self._options)
         while len(self._unrendered) > 0:
             # we could use a view here, but this is simple enough:
             # _interpolate_inner removes references from the refs hash after
             # processing them, so we cannot just iterate the dict
             path, v = self._unrendered.iteritems().next()
-            self._interpolate_inner(path, exports)
+            self._interpolate_inner(path, inventory)
 
     def initialise_interpolation(self, options=None):
         self._unrendered = None
@@ -251,7 +251,7 @@ class Parameters(object):
             self._has_inv_query = False
             self._render_simple_dict(self._base, DictPath(self._delimiter))
 
-    def _interpolate_inner(self, path, exports):
+    def _interpolate_inner(self, path, inventory):
         value = path.get_value(self._base)
         if not isinstance(value, (Value, ValueList)):
             # references to lists and dicts are only deepcopied when merged
@@ -260,14 +260,14 @@ class Parameters(object):
             del self._unrendered[path]
             return
         self._unrendered[path] = False
-        self._interpolate_references(path, value, exports)
-        new = self._interpolate_render_value(path, value, exports)
+        self._interpolate_references(path, value, inventory)
+        new = self._interpolate_render_value(path, value, inventory)
         path.set_value(self._base, new)
         del self._unrendered[path]
 
-    def _interpolate_render_value(self, path, value, exports):
+    def _interpolate_render_value(self, path, value, inventory):
         try:
-            new = value.render(self._base, exports, self._options)
+            new = value.render(self._base, inventory, self._options)
         except UndefinedVariableError as e:
             raise UndefinedVariableError(e.var, path)
 
@@ -277,7 +277,7 @@ class Parameters(object):
             self._render_simple_list(new, path)
         return new
 
-    def _interpolate_references(self, path, value, exports):
+    def _interpolate_references(self, path, value, inventory):
         all_refs = False
         while not all_refs:
             for ref in value.get_references():
@@ -292,14 +292,14 @@ class Parameters(object):
                         # faced with a cyclical reference.
                         raise InfiniteRecursionError(path, ref)
                     else:
-                        self._interpolate_inner(path_from_ref, exports)
+                        self._interpolate_inner(path_from_ref, inventory)
                 else:
                     # ensure ancestor keys are already dereferenced
                     ancestor = DictPath(self._delimiter)
                     for k in path_from_ref.key_parts():
                         ancestor = ancestor.new_subpath(k)
                         if ancestor in self._unrendered:
-                            self._interpolate_inner(ancestor, exports)
+                            self._interpolate_inner(ancestor, inventory)
             if value.allRefs():
                 all_refs = True
             else:

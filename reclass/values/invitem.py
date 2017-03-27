@@ -122,15 +122,15 @@ class InvItem(Item):
         except KeyError as e:
             raise UndefinedVariableError(str(path))
 
-    def _value_expression(self, exports):
+    def _value_expression(self, inventory):
         results = {}
         path = DictPath(self._delimiter, self._expr[0][1]).drop_first()
-        for node, items in exports.iteritems():
+        for node, items in inventory.iteritems():
             if path.exists_in(items):
                 results[node] = copy.deepcopy(self._resolve(path, items))
         return results
 
-    def _test_expression(self, context, exports):
+    def _test_expression(self, context, inventory):
         export_path = None
         parameter_path = None
         parameter_value = None
@@ -156,7 +156,7 @@ class InvItem(Item):
         value_path.drop_first()
 
         results = {}
-        for node, items in exports.iteritems():
+        for node, items in inventory.iteritems():
             if export_path.exists_in(items):
                 export_value = self._resolve(export_path, items)
                 test_passed = False
@@ -181,11 +181,11 @@ class InvItem(Item):
             value = var
         return export, parameter, value
 
-    def render(self, context, exports):
+    def render(self, context, inventory):
         if self._expr_type == _VALUE:
-            return self._value_expression(exports)
+            return self._value_expression(inventory)
         elif self._expr_type == _TEST:
-            return self._test_expression(context, exports)
+            return self._test_expression(context, inventory)
         raise ExpressionError('Failed to render %s' % str(self))
 
     def __str__(self):

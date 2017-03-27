@@ -26,7 +26,7 @@ class DictItem(Item):
                 raise TypeError('allow dict over scalar = False: cannot merge %s onto %s' % (repr(self), repr(item)))
         raise TypeError('Cannot merge %s over %s' % (repr(self), repr(item)))
 
-    def render(self, context, exports):
+    def render(self, context, inventory):
         return self._dict
 
     def __repr__(self):

@@ -18,7 +18,7 @@ class ListItem(Item):
     def is_container(self):
         return True
 
-    def render(self, context, exports):
+    def render(self, context, inventory):
         return self._list
 
     def merge_over(self, item, options):
