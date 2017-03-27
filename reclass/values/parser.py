@@ -133,30 +133,19 @@ class Parser(object):
         else:
             return CompItem(items)
 
+    _create_dict = { _STR: (lambda s, v: ScaItem(v)),
+                     _REF: (lambda s, v: s._create_ref(v)),
+                     _EXP: (lambda s, v: s._create_inv(v)) }
+
     def _create_items(self, tokens):
-        items = []
-        for token in tokens:
-            if token[0] == _STR:
-                items.append(ScaItem(token[1]))
-            elif token[0] == _REF:
-                items.append(self._create_ref(token[1]))
-            elif token[0] == _EXP:
-                items.append(self._create_exp(token[1]))
-        return items
+        return [ self._create_dict[t](self, v) for t, v in tokens ]
 
     def _create_ref(self, tokens):
-        items = []
-        for token in tokens:
-            if token[0] == _STR:
-                items.append(ScaItem(token[1]))
-            elif token[0] == _REF:
-                items.append(self._create_ref(token[1]))
+        items = [ self._create_dict[t](self, v) for t, v in tokens ]
         return RefItem(items, self._delimiter)
 
-    def _create_exp(self, tokens):
-        items = []
-        for token in tokens:
-            items.append(ScaItem(token[1]))
+    def _create_inv(self, tokens):
+        items = [ ScaItem(v) for t, v in tokens ]
         if len(items) == 1:
             return InvItem(items[0], self._delimiter)
         else:
