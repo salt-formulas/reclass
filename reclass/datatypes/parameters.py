@@ -44,15 +44,17 @@ class Parameters(object):
     DEFAULT_PATH_DELIMITER = PARAMETER_INTERPOLATION_DELIMITER
     DICT_KEY_OVERRIDE_PREFIX = PARAMETER_DICT_KEY_OVERRIDE_PREFIX
 
-    def __init__(self, mapping=None, delimiter=None):
+    def __init__(self, mapping=None, delimiter=None, options=None):
         if delimiter is None:
             delimiter = Parameters.DEFAULT_PATH_DELIMITER
+        if options is None:
+            options = MergeOptions()
         self._delimiter = delimiter
         self._base = {}
         self._unrendered = None
         self._escapes_handled = {}
-        self._options = None
         self._has_inv_query = False
+        self._options = options
         if mapping is not None:
             # we initialise by merging
             self._keep_overrides = True
@@ -228,7 +230,7 @@ class Parameters(object):
             self._render_simple_container(item_list, n, value, path)
 
     def interpolate(self, inventory=None):
-        self._initialise_interpolate(self._options)
+        self._initialise_interpolate()
         while len(self._unrendered) > 0:
             # we could use a view here, but this is simple enough:
             # _interpolate_inner removes references from the refs hash after
@@ -236,16 +238,11 @@ class Parameters(object):
             path, v = self._unrendered.iteritems().next()
             self._interpolate_inner(path, inventory)
 
-    def initialise_interpolation(self, options=None):
+    def initialise_interpolation(self):
         self._unrendered = None
-        self._initialise_interpolate(options)
+        self._initialise_interpolate()
 
-    def _initialise_interpolate(self, options):
-        if options is None:
-            self._options = MergeOptions()
-        else:
-            self._options = options
-
+    def _initialise_interpolate(self):
         if self._unrendered is None:
             self._unrendered = {}
             self._has_inv_query = False

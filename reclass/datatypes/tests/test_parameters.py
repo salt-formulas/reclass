@@ -172,18 +172,18 @@ class TestParametersNoMock(unittest.TestCase):
         l = ['foo', 1, 2]
         options = MergeOptions()
         options.allow_list_over_scalar = True
-        p1 = Parameters(dict(key=l[0]))
+        p1 = Parameters(dict(key=l[0]), options=options)
         p1.merge(Parameters(dict(key=l[1:])))
-        p1.initialise_interpolation(options)
+        p1.initialise_interpolation()
         self.assertListEqual(p1.as_dict()['key'], l)
 
     def test_merge_scalar_over_list(self):
         l = ['foo', 1, 2]
         options = MergeOptions()
         options.allow_scalar_over_list = True
-        p1 = Parameters(dict(key=l[:2]))
+        p1 = Parameters(dict(key=l[:2]), options=options)
         p1.merge(Parameters(dict(key=l[2])))
-        p1.initialise_interpolation(options)
+        p1.initialise_interpolation()
         self.assertEqual(p1.as_dict()['key'], l[2])
 
     def test_merge_dicts(self):
@@ -224,12 +224,12 @@ class TestParametersNoMock(unittest.TestCase):
             p.interpolate()
 
     def test_merge_scalar_over_dict(self):
-        p = Parameters(dict(base=SIMPLE))
-        mergee = {'base':'foo'}
         options = MergeOptions()
         options.allow_scalar_over_dict = True
+        p = Parameters(dict(base=SIMPLE), options=options)
+        mergee = {'base':'foo'}
         p.merge(Parameters(mergee))
-        p.initialise_interpolation(options)
+        p.initialise_interpolation()
         self.assertDictEqual(p.as_dict(), mergee)
 
     def test_interpolate_single(self):

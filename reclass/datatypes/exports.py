@@ -7,8 +7,8 @@ from parameters import Parameters
 
 class Exports(Parameters):
 
-    def __init__(self, mapping=None, delimiter=None):
-        super(Exports, self).__init__(mapping, delimiter)
+    def __init__(self, mapping=None, delimiter=None, options=None):
+        super(Exports, self).__init__(mapping, delimiter, options)
 
     def __repr__(self):
         return '%s(%r, %r)' % (self.__class__.__name__, self._base,
@@ -22,9 +22,9 @@ class Exports(Parameters):
         overdict = {'~' + key: value for key, value in other.iteritems()}
         self.merge(overdict)
 
-    def interpolate_from_external(self, external, options=None):
-        self._initialise_interpolate(options)
-        external._initialise_interpolate(options)
+    def interpolate_from_external(self, external):
+        self._initialise_interpolate()
+        external._initialise_interpolate()
         while len(self._unrendered) > 0:
             path, v = self._unrendered.iteritems().next()
             value = path.get_value(self._base)
