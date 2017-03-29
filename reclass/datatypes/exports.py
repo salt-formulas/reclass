@@ -4,6 +4,7 @@
 # This file is part of reclass (http://github.com/madduck/reclass)
 #
 from parameters import Parameters
+from reclass.errors import UndefinedVariableError
 
 class Exports(Parameters):
 
@@ -29,6 +30,17 @@ class Exports(Parameters):
             path, v = self._unrendered.iteritems().next()
             value = path.get_value(self._base)
             external._interpolate_references(path, value, None)
-            new = value.render(external._base, self._options)
+            new = self._interpolate_render_from_external(external._base, path, value)
             path.set_value(self._base, new)
             del self._unrendered[path]
+
+    def _interpolate_render_from_external(self, context, path, value):
+        try:
+            new = value.render(context, None, self._options)
+        except UndefinedVariableError as e:
+            raise UndefinedVariableError(e.var, path)
+        if isinstance(new, dict):
+            self._render_simple_dict(new, path)
+        elif isinstance(new, list):
+            self._render_simple_list(new, path)
+        return new
