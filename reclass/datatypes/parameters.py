@@ -55,6 +55,7 @@ class Parameters(object):
         self._escapes_handled = {}
         self._has_inv_query = False
         self._options = options
+        self._keep_overrides = False
         if mapping is not None:
             # we initialise by merging
             self._keep_overrides = True
