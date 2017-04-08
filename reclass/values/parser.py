@@ -16,7 +16,7 @@ from reclass.errors import ParseError
 
 _STR = 1
 _REF = 2
-_EXP = 3
+_INV = 3
 
 _ESCAPE = ESCAPE_CHARACTER
 _DOUBLE_ESCAPE = _ESCAPE + _ESCAPE
@@ -30,16 +30,16 @@ _REF_DOUBLE_ESCAPE_OPEN = _DOUBLE_ESCAPE + _REF_OPEN
 _REF_DOUBLE_ESCAPE_CLOSE = _DOUBLE_ESCAPE + _REF_CLOSE
 _REF_EXCLUDES = _ESCAPE + _REF_OPEN + _REF_CLOSE
 
-_EXP_OPEN = EXPORT_SENTINELS[0]
-_EXP_CLOSE = EXPORT_SENTINELS[1]
-_EXP_CLOSE_FIRST = _EXP_CLOSE[0]
-_EXP_ESCAPE_OPEN = _ESCAPE + _EXP_OPEN
-_EXP_ESCAPE_CLOSE = _ESCAPE + _EXP_CLOSE
-_EXP_DOUBLE_ESCAPE_OPEN = _DOUBLE_ESCAPE + _EXP_OPEN
-_EXP_DOUBLE_ESCAPE_CLOSE = _DOUBLE_ESCAPE + _EXP_CLOSE
-_EXP_EXCLUDES = _ESCAPE + _EXP_OPEN + _EXP_CLOSE
+_INV_OPEN = EXPORT_SENTINELS[0]
+_INV_CLOSE = EXPORT_SENTINELS[1]
+_INV_CLOSE_FIRST = _INV_CLOSE[0]
+_INV_ESCAPE_OPEN = _ESCAPE + _INV_OPEN
+_INV_ESCAPE_CLOSE = _ESCAPE + _INV_CLOSE
+_INV_DOUBLE_ESCAPE_OPEN = _DOUBLE_ESCAPE + _INV_OPEN
+_INV_DOUBLE_ESCAPE_CLOSE = _DOUBLE_ESCAPE + _INV_CLOSE
+_INV_EXCLUDES = _ESCAPE + _INV_OPEN + _INV_CLOSE
 
-_EXCLUDES = _ESCAPE + _REF_OPEN + _REF_CLOSE + _EXP_OPEN + _EXP_CLOSE
+_EXCLUDES = _ESCAPE + _REF_OPEN + _REF_CLOSE + _INV_OPEN + _INV_CLOSE
 
 def _string(string, location, tokens):
     token = tokens[0]
@@ -49,12 +49,13 @@ def _reference(string, location, tokens):
     token = list(tokens[0])
     tokens[0] = (_REF, token)
 
-def _export(string, location, tokens):
+def _invquery(string, location, tokens):
     token = list(tokens[0])
-    tokens[0] = (_EXP, token)
+    tokens[0] = (_INV, token)
 
 def _get_parser():
-    double_escape = pp.Combine(pp.Literal(_DOUBLE_ESCAPE) + pp.MatchFirst([pp.FollowedBy(_REF_OPEN), pp.FollowedBy(_REF_CLOSE)])).setParseAction(pp.replaceWith(_ESCAPE))
+    double_escape = pp.Combine(pp.Literal(_DOUBLE_ESCAPE) + pp.MatchFirst([pp.FollowedBy(_REF_OPEN), pp.FollowedBy(_REF_CLOSE),
+                               pp.FollowedBy(_INV_OPEN), pp.FollowedBy(_INV_CLOSE)])).setParseAction(pp.replaceWith(_ESCAPE))
 
     ref_open = pp.Literal(_REF_OPEN).suppress()
     ref_close = pp.Literal(_REF_CLOSE).suppress()
@@ -70,21 +71,21 @@ def _get_parser():
     reference = (ref_open + pp.Group(ref_items) + ref_close).setParseAction(_reference)
     ref_item << (reference | ref_string)
 
-    exp_open = pp.Literal(_EXP_OPEN).suppress()
-    exp_close = pp.Literal(_EXP_CLOSE).suppress()
-    exp_not_open = ~pp.Literal(_EXP_OPEN) + ~pp.Literal(_EXP_ESCAPE_OPEN) + ~pp.Literal(_EXP_DOUBLE_ESCAPE_OPEN)
-    exp_not_close = ~pp.Literal(_EXP_CLOSE) + ~pp.Literal(_EXP_ESCAPE_CLOSE) + ~pp.Literal(_EXP_DOUBLE_ESCAPE_CLOSE)
-    exp_escape_open = pp.Literal(_EXP_ESCAPE_OPEN).setParseAction(pp.replaceWith(_EXP_OPEN))
-    exp_escape_close = pp.Literal(_EXP_ESCAPE_CLOSE).setParseAction(pp.replaceWith(_EXP_CLOSE))
-    exp_text = pp.CharsNotIn(_EXP_CLOSE_FIRST)
-    exp_content = pp.Combine(pp.OneOrMore(exp_not_close + exp_text))
-    exp_string = pp.MatchFirst([double_escape, exp_escape_open, exp_escape_close, exp_content]).setParseAction(_string)
-    exp_items = pp.OneOrMore(exp_string)
-    export = (exp_open + pp.Group(exp_items) + exp_close).setParseAction(_export)
+    inv_open = pp.Literal(_INV_OPEN).suppress()
+    inv_close = pp.Literal(_INV_CLOSE).suppress()
+    inv_not_open = ~pp.Literal(_INV_OPEN) + ~pp.Literal(_INV_ESCAPE_OPEN) + ~pp.Literal(_INV_DOUBLE_ESCAPE_OPEN)
+    inv_not_close = ~pp.Literal(_INV_CLOSE) + ~pp.Literal(_INV_ESCAPE_CLOSE) + ~pp.Literal(_INV_DOUBLE_ESCAPE_CLOSE)
+    inv_escape_open = pp.Literal(_INV_ESCAPE_OPEN).setParseAction(pp.replaceWith(_INV_OPEN))
+    inv_escape_close = pp.Literal(_INV_ESCAPE_CLOSE).setParseAction(pp.replaceWith(_INV_CLOSE))
+    inv_text = pp.CharsNotIn(_INV_CLOSE_FIRST)
+    inv_content = pp.Combine(pp.OneOrMore(inv_not_close + inv_text))
+    inv_string = pp.MatchFirst([double_escape, inv_escape_open, inv_escape_close, inv_content]).setParseAction(_string)
+    inv_items = pp.OneOrMore(inv_string)
+    export = (inv_open + pp.Group(inv_items) + inv_close).setParseAction(_invquery)
 
     text = pp.CharsNotIn(_EXCLUDES) | pp.CharsNotIn('', exact=1)
-    content = pp.Combine(pp.OneOrMore(ref_not_open + exp_not_open + text))
-    string = pp.MatchFirst([double_escape, ref_escape_open, exp_escape_open, content]).setParseAction(_string)
+    content = pp.Combine(pp.OneOrMore(ref_not_open + inv_not_open + text))
+    string = pp.MatchFirst([double_escape, ref_escape_open, inv_escape_open, content]).setParseAction(_string)
 
     item = reference | export | string
     line = pp.OneOrMore(item) + pp.StringEnd()
@@ -135,7 +136,7 @@ class Parser(object):
 
     _create_dict = { _STR: (lambda s, v: ScaItem(v)),
                      _REF: (lambda s, v: s._create_ref(v)),
-                     _EXP: (lambda s, v: s._create_inv(v)) }
+                     _INV: (lambda s, v: s._create_inv(v)) }
 
     def _create_items(self, tokens):
         return [ self._create_dict[t](self, v) for t, v in tokens ]
