@@ -23,16 +23,13 @@ def ext_pillar(minion_id, pillar,
                inventory_base_uri=OPT_INVENTORY_BASE_URI,
                nodes_uri=OPT_NODES_URI,
                classes_uri=OPT_CLASSES_URI,
-               exports_uri=OPT_EXPORTS_URI,
                class_mappings=None,
                propagate_pillar_data_to_reclass=False,
                ignore_class_notfound=OPT_IGNORE_CLASS_NOTFOUND,
                ignore_class_regexp=OPT_IGNORE_CLASS_REGEXP):
 
-    nodes_uri, classes_uri, exports_uri = path_mangler(inventory_base_uri, nodes_uri,
-                                                       classes_uri, exports_uri)
-    storage = get_storage(storage_type, nodes_uri, classes_uri,
-                          exports_uri, default_environment='base')
+    nodes_uri, classes_uri = path_mangler(inventory_base_uri, nodes_uri, classes_uri)
+    storage = get_storage(storage_type, nodes_uri, classes_uri, default_environment='base')
     input_data = None
     if propagate_pillar_data_to_reclass:
         input_data = pillar
@@ -58,10 +55,8 @@ def top(minion_id, storage_type=OPT_STORAGE_TYPE,
         ignore_class_notfound=OPT_IGNORE_CLASS_NOTFOUND,
         ignore_class_regexp=OPT_IGNORE_CLASS_REGEXP):
 
-    nodes_uri, classes_uri, exports_uri = path_mangler(inventory_base_uri, nodes_uri,
-                                                       classes_uri, exports_uri)
-    storage = get_storage(storage_type, nodes_uri, classes_uri,
-                          exports_uri, default_environment='base')
+    nodes_uri, classes_uri = path_mangler(inventory_base_uri, nodes_uri, classes_uri)
+    storage = get_storage(storage_type, nodes_uri, classes_uri, default_environment='base')
     reclass = Core(storage, class_mappings, input_data=None,
                    ignore_class_notfound=ignore_class_notfound,
                    ignore_class_regexp=ignore_class_regexp)

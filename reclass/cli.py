@@ -28,8 +28,7 @@ def main():
                               defaults=defaults)
 
         storage = get_storage(options.storage_type, options.nodes_uri,
-                              options.classes_uri, options.exports_uri,
-                              default_environment='base')
+                              options.classes_uri, default_environment='base')
 
         class_mappings = defaults.get('class_mappings')
         reclass = Core(storage, class_mappings, ignore_class_notfound=options.ignore_class_notfound, ignore_class_regexp=options.ignore_class_regexp)
