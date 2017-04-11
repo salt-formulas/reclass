@@ -50,7 +50,7 @@ def ext_pillar(minion_id, pillar,
 def top(minion_id, storage_type=OPT_STORAGE_TYPE,
         inventory_base_uri=OPT_INVENTORY_BASE_URI, nodes_uri=OPT_NODES_URI,
         classes_uri=OPT_CLASSES_URI,
-        exports_uri=OPT_EXPORTS_URI,
+        #exports_uri=OPT_EXPORTS_URI,
         class_mappings=None,
         ignore_class_notfound=OPT_IGNORE_CLASS_NOTFOUND,
         ignore_class_regexp=OPT_IGNORE_CLASS_REGEXP):
