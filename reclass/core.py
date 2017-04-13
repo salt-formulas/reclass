@@ -158,12 +158,9 @@ class Core(object):
     def _nodeinfo(self, nodename, inventory):
         ret = self._node_entity(nodename)
         ret.initialise_interpolation()
-        if ret.parameters.has_inv_query():
-            if inventory is None:
-                inventory = self._get_inventory()
-            ret.interpolate(nodename, inventory)
-        else:
-            ret.interpolate(nodename, None)
+        if ret.parameters.has_inv_query() and inventory is None:
+            inventory = self._get_inventory()
+        ret.interpolate(nodename, inventory)
         return ret
 
     def _nodeinfo_as_dict(self, nodename, entity):
