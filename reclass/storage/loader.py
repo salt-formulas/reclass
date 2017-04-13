@@ -23,3 +23,9 @@ class StorageBackendLoader(object):
                                  '"{1}"'.format(self._name, klassname))
 
         return klass
+
+    def path_mangler(self, name='path_mangler'):
+        function = getattr(self._module, name, None)
+        if function is None:
+            raise AttributeError('Storage backend class {0} does not export "{1}"'.format(self._name, name))
+        return function

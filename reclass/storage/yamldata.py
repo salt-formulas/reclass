@@ -11,25 +11,37 @@ import yaml
 import os
 from reclass.errors import NotFoundError
 
-class YamlFile(object):
+class YamlData(object):
 
-    def __init__(self, path):
-        ''' Initialise a yamlfile object '''
+    @classmethod
+    def from_file(cls, path):
+        ''' Initialise yaml data from a local file '''
         if not os.path.isfile(path):
             raise NotFoundError('No such file: %s' % path)
         if not os.access(path, os.R_OK):
             raise NotFoundError('Cannot open: %s' % path)
-        self._path = path
-        self._data = dict()
-        self._read()
-    path = property(lambda self: self._path)
-
-    def _read(self):
-        fp = file(self._path)
+        y = cls('yaml_fs://{0}'.format(path))
+        fp = file(path)
         data = yaml.safe_load(fp)
         if data is not None:
-            self._data = data
+            y._data = data
         fp.close()
+        return y
+
+    @classmethod
+    def from_string(cls, string, uri):
+        ''' Initialise yaml data from a string '''
+        y = cls(uri)
+        data = yaml.safe_load(string)
+        if data is not None:
+            y._data = data
+        return y
+
+    def __init__(self, uri):
+        self._uri = uri
+        self._data = dict()
+
+    uri = property(lambda self: self._uri)
 
     def get_data(self):
         return self._data
@@ -61,8 +73,7 @@ class YamlFile(object):
         env = self._data.get('environment', default_environment)
 
         return datatypes.Entity(classes, applications, parameters, exports,
-                                name=name, environment=env,
-                                uri='yaml_fs://{0}'.format(self._path))
+                                name=name, environment=env, uri=self.uri)
 
     def __repr__(self):
         return '<{0} {1}, {2}>'.format(self.__class__.__name__, self._path,
