@@ -50,7 +50,7 @@ class ExternalNodeStorage(NodeStorageBase):
     def get_node(self, name):
         return self._nodes_storage.get_node(name)
 
-    def get_class(self, name, environment=None):
+    def get_class(self, name, environment):
         if environment is None:
             storage = self._classes_default_storage
         else:

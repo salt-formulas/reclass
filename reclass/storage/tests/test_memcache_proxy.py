@@ -47,23 +47,23 @@ class TestMemcacheProxy(unittest.TestCase):
         p = MemcacheProxy(self._storage, cache_classes=False)
         NAME = 'foo'; NAME2 = 'bar'; RET = 'baz'
         self._storage.get_class.return_value = RET
-        self.assertEqual(p.get_class(NAME), RET)
-        self.assertEqual(p.get_class(NAME), RET)
-        self.assertEqual(p.get_class(NAME2), RET)
-        self.assertEqual(p.get_class(NAME2), RET)
-        expected = [mock.call(NAME), mock.call(NAME),
-                    mock.call(NAME2), mock.call(NAME2)]
+        self.assertEqual(p.get_class(NAME, None), RET)
+        self.assertEqual(p.get_class(NAME, None), RET)
+        self.assertEqual(p.get_class(NAME2, None), RET)
+        self.assertEqual(p.get_class(NAME2, None), RET)
+        expected = [mock.call(NAME, None), mock.call(NAME, None),
+                    mock.call(NAME2, None), mock.call(NAME2, None)]
         self.assertListEqual(self._storage.get_class.call_args_list, expected)
 
     def test_classes_caching(self):
         p = MemcacheProxy(self._storage, cache_classes=True)
         NAME = 'foo'; NAME2 = 'bar'; RET = 'baz'
         self._storage.get_class.return_value = RET
-        self.assertEqual(p.get_class(NAME), RET)
-        self.assertEqual(p.get_class(NAME), RET)
-        self.assertEqual(p.get_class(NAME2), RET)
-        self.assertEqual(p.get_class(NAME2), RET)
-        expected = [mock.call(NAME), mock.call(NAME2)] # called once each
+        self.assertEqual(p.get_class(NAME, None), RET)
+        self.assertEqual(p.get_class(NAME, None), RET)
+        self.assertEqual(p.get_class(NAME2, None), RET)
+        self.assertEqual(p.get_class(NAME2, None), RET)
+        expected = [mock.call(NAME, None), mock.call(NAME2, None)] # called once each
         self.assertListEqual(self._storage.get_class.call_args_list, expected)
 
     def test_nodelist_no_caching(self):

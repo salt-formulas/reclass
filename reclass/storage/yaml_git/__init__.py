@@ -136,7 +136,7 @@ class ExternalNodeStorage(NodeStorageBase):
         entity = YamlData.from_string(blob.data, 'git_fs://{0}#{1}/{2}'.format(self._nodes_uri.repo, self._nodes_uri.branch, file.path)).get_entity(name)
         return entity
 
-    def get_class(self, name, environment=None):
+    def get_class(self, name, environment):
         uri = self._env_to_uri(environment)
         file = self._repos[uri.repo].files[uri.branch][name]
         blob = self._repos[uri.repo].get(file.id)
@@ -151,12 +151,16 @@ class ExternalNodeStorage(NodeStorageBase):
             self._repos[url] = GitRepo(url)
 
     def _env_to_uri(self, environment):
+        ret = None
         if environment is None:
             ret = self._classes_default_uri
-        for env, uri in self._classes_uri:
-            if env == environment:
-                ret = uri
-                break
+        else:
+            for env, uri in self._classes_uri:
+                if env == environment:
+                    ret = uri
+                    break
+        if ret is None:
+            ret = self._classes_default_uri
         if ret.branch == '__env__':
             ret.branch = environment
         if ret.branch == None:
