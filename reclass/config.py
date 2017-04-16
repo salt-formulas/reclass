@@ -21,8 +21,7 @@ def make_db_options_group(parser, defaults={}):
                    default=defaults.get('storage_type', OPT_STORAGE_TYPE),
                    help='the type of storage backend to use [%default]')
     ret.add_option('-b', '--inventory-base-uri', dest='inventory_base_uri',
-                   default=defaults.get('inventory_base_uri',
-                                        OPT_INVENTORY_BASE_URI),
+                   default=defaults.get('inventory_base_uri', OPT_INVENTORY_BASE_URI),
                    help='the base URI to prepend to nodes and classes [%default]'),
     ret.add_option('-u', '--nodes-uri', dest='nodes_uri',
                    default=defaults.get('nodes_uri', OPT_NODES_URI),
@@ -45,8 +44,7 @@ def make_output_options_group(parser, defaults={}):
     ret.add_option('-o', '--output', dest='output',
                    default=defaults.get('output', OPT_OUTPUT),
                    help='output format (yaml or json) [%default]')
-    ret.add_option('-y', '--pretty-print', dest='pretty_print',
-                   action="store_true",
+    ret.add_option('-y', '--pretty-print', dest='pretty_print', action="store_true",
                    default=defaults.get('pretty_print', OPT_PRETTY_PRINT),
                    help='try to make the output prettier [%default]')
     ret.add_option('-r', '--no-refs', dest='no_refs', action="store_true",
