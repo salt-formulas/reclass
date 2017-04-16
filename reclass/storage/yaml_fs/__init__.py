@@ -53,11 +53,13 @@ class ExternalNodeStorage(NodeStorageBase):
     def __init__(self, nodes_uri, classes_uri):
         super(ExternalNodeStorage, self).__init__(STORAGE_NAME)
 
-        self._nodes_uri = nodes_uri
-        self._nodes = self._enumerate_inventory(nodes_uri, NameMangler.nodes)
+        if nodes_uri is not None:
+            self._nodes_uri = nodes_uri
+            self._nodes = self._enumerate_inventory(nodes_uri, NameMangler.nodes)
 
-        self._classes_uri = classes_uri
-        self._classes = self._enumerate_inventory(classes_uri, NameMangler.classes)
+        if classes_uri is not None:
+            self._classes_uri = classes_uri
+            self._classes = self._enumerate_inventory(classes_uri, NameMangler.classes)
 
     nodes_uri = property(lambda self: self._nodes_uri)
     classes_uri = property(lambda self: self._classes_uri)
@@ -96,7 +98,7 @@ class ExternalNodeStorage(NodeStorageBase):
         entity = YamlData.from_file(path).get_entity(name)
         return entity
 
-    def get_class(self, name, nodename=None, environment=None):
+    def get_class(self, name, environment=None):
         vvv('GET CLASS {0}'.format(name))
         try:
             path = os.path.join(self.classes_uri, self._classes[name])

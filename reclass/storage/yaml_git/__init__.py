@@ -105,25 +105,27 @@ class ExternalNodeStorage(NodeStorageBase):
     def __init__(self, nodes_uri, classes_uri):
         super(ExternalNodeStorage, self).__init__(STORAGE_NAME)
 
-        self._nodes_uri = GitURI({ 'branch': 'master', 'repo': None })
-        self._nodes_uri.update(nodes_uri)
-        self._load_repo(self._nodes_uri.repo)
-        self._nodes = self._repos[self._nodes_uri.repo].nodes(self._nodes_uri.branch)
+        if nodes_uri is not None:
+            self._nodes_uri = GitURI({ 'branch': 'master', 'repo': None })
+            self._nodes_uri.update(nodes_uri)
+            self._load_repo(self._nodes_uri.repo)
+            self._nodes = self._repos[self._nodes_uri.repo].nodes(self._nodes_uri.branch)
 
-        self._classes_default_uri = GitURI({ 'branch': '__env__', 'repo': None })
-        self._classes_default_uri.update(classes_uri)
-        self._load_repo(self._classes_default_uri.repo)
+        if classes_uri is not None:
+            self._classes_default_uri = GitURI({ 'branch': '__env__', 'repo': None })
+            self._classes_default_uri.update(classes_uri)
+            self._load_repo(self._classes_default_uri.repo)
 
-        self._classes_uri = []
-        if 'env_overrides' in classes_uri:
-            for override in classes_uri['env_overrides']:
-                for env, options in override.iteritems():
-                    uri = GitURI({ 'branch': env, 'repo': self._classes_default_uri.repo })
-                    uri.update(options)
-                    self._classes_uri.append((env, uri))
-                    self._load_repo(uri.repo)
+            self._classes_uri = []
+            if 'env_overrides' in classes_uri:
+                for override in classes_uri['env_overrides']:
+                    for env, options in override.iteritems():
+                        uri = GitURI({ 'branch': env, 'repo': self._classes_default_uri.repo })
+                        uri.update(options)
+                        self._classes_uri.append((env, uri))
+                        self._load_repo(uri.repo)
 
-        self._classes_uri.append(('*', self._classes_default_uri))
+            self._classes_uri.append(('*', self._classes_default_uri))
 
     nodes_uri = property(lambda self: self._nodes_uri)
     classes_uri = property(lambda self: self._classes_uri)
@@ -134,7 +136,7 @@ class ExternalNodeStorage(NodeStorageBase):
         entity = YamlData.from_string(blob.data, 'git_fs://{0}#{1}/{2}'.format(self._nodes_uri.repo, self._nodes_uri.branch, file.path)).get_entity(name)
         return entity
 
-    def get_class(self, name, nodename=None, environment=None):
+    def get_class(self, name, environment=None):
         uri = self._env_to_uri(environment)
         file = self._repos[uri.repo].files[uri.branch][name]
         blob = self._repos[uri.repo].get(file.id)
