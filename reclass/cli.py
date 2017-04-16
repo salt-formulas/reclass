@@ -24,14 +24,14 @@ def main():
                     'output' : OPT_OUTPUT
                    }
         defaults.update(find_and_read_configfile())
+
         options = get_options(RECLASS_NAME, VERSION, DESCRIPTION,
                               defaults=defaults)
 
-        storage = get_storage(options.storage_type, options.nodes_uri,
-                              options.classes_uri, default_environment='base')
+        storage = get_storage(options.storage_type, options.nodes_uri, options.classes_uri)
 
         class_mappings = defaults.get('class_mappings')
-        reclass = Core(storage, class_mappings, ignore_class_notfound=options.ignore_class_notfound, ignore_class_regexp=options.ignore_class_regexp)
+        reclass = Core(storage, class_mappings, default_environment='base', ignore_class_notfound=options.ignore_class_notfound, ignore_class_regexp=options.ignore_class_regexp)
 
         if options.mode == MODE_NODEINFO:
             data = reclass.nodeinfo(options.nodename)

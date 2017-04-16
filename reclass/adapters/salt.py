@@ -29,11 +29,11 @@ def ext_pillar(minion_id, pillar,
                ignore_class_regexp=OPT_IGNORE_CLASS_REGEXP):
 
     nodes_uri, classes_uri = path_mangler(inventory_base_uri, nodes_uri, classes_uri)
-    storage = get_storage(storage_type, nodes_uri, classes_uri, default_environment='base')
+    storage = get_storage(storage_type, nodes_uri, classes_uri)
     input_data = None
     if propagate_pillar_data_to_reclass:
         input_data = pillar
-    reclass = Core(storage, class_mappings, input_data=input_data,
+    reclass = Core(storage, class_mappings, input_data=input_data, default_environment='base',
                    ignore_class_notfound=ignore_class_notfound,
                    ignore_class_regexp=ignore_class_regexp)
 
@@ -56,8 +56,8 @@ def top(minion_id, storage_type=OPT_STORAGE_TYPE,
         ignore_class_regexp=OPT_IGNORE_CLASS_REGEXP):
 
     nodes_uri, classes_uri = path_mangler(inventory_base_uri, nodes_uri, classes_uri)
-    storage = get_storage(storage_type, nodes_uri, classes_uri, default_environment='base')
-    reclass = Core(storage, class_mappings, input_data=None,
+    storage = get_storage(storage_type, nodes_uri, classes_uri)
+    reclass = Core(storage, class_mappings, input_data=None, default_environment='base',
                    ignore_class_notfound=ignore_class_notfound,
                    ignore_class_regexp=ignore_class_regexp)
 

@@ -29,7 +29,7 @@ class Entity(object):
         self._set_exports(exports)
         self._uri = uri or ''
         self._name = name or ''
-        self._environment = environment or ''
+        self._environment = environment
 
     name = property(lambda s: s._name)
     short_name = property(lambda s: s._short_name)
@@ -71,7 +71,8 @@ class Entity(object):
         self._exports.merge(other._exports)
         self._name = other.name
         self._uri = other.uri
-        self._environment = other.environment
+        if other.environment != None:
+            self._environment = other.environment
 
     def merge_parameters(self, params):
         self._parameters.merge(params)

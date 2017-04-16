@@ -50,7 +50,7 @@ def path_mangler(inventory_base_uri, nodes_uri, classes_uri):
 
 class ExternalNodeStorage(NodeStorageBase):
 
-    def __init__(self, nodes_uri, classes_uri, default_environment=None):
+    def __init__(self, nodes_uri, classes_uri):
         super(ExternalNodeStorage, self).__init__(STORAGE_NAME)
 
         self._nodes_uri = nodes_uri
@@ -58,7 +58,6 @@ class ExternalNodeStorage(NodeStorageBase):
 
         self._classes_uri = classes_uri
         self._classes = self._enumerate_inventory(classes_uri, NameMangler.classes)
-        self._default_environment = default_environment
 
     nodes_uri = property(lambda self: self._nodes_uri)
     classes_uri = property(lambda self: self._classes_uri)
@@ -94,10 +93,10 @@ class ExternalNodeStorage(NodeStorageBase):
             name = os.path.splitext(relpath)[0]
         except KeyError, e:
             raise reclass.errors.NodeNotFound(self.name, name, self.nodes_uri)
-        entity = YamlData.from_file(path).get_entity(name, self._default_environment)
+        entity = YamlData.from_file(path).get_entity(name)
         return entity
 
-    def get_class(self, name, nodename=None):
+    def get_class(self, name, nodename=None, environment=None):
         vvv('GET CLASS {0}'.format(name))
         try:
             path = os.path.join(self.classes_uri, self._classes[name])

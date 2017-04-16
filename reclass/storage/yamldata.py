@@ -46,7 +46,7 @@ class YamlData(object):
     def get_data(self):
         return self._data
 
-    def get_entity(self, name=None, default_environment=None):
+    def get_entity(self, name=None):
         classes = self._data.get('classes')
         if classes is None:
             classes = []
@@ -70,7 +70,7 @@ class YamlData(object):
         if name is None:
             name = self._path
 
-        env = self._data.get('environment', default_environment)
+        env = self._data.get('environment', None)
 
         return datatypes.Entity(classes, applications, parameters, exports,
                                 name=name, environment=env, uri=self.uri)

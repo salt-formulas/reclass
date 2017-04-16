@@ -57,9 +57,9 @@ class MemcacheProxy(NodeStorageBase):
         return MemcacheProxy._cache_proxy(name, self._nodes_cache,
                                           self._real_storage.get_node)
 
-    def get_class(self, name):
+    def get_class(self, name, environment):
         if not self._cache_classes:
-            return self._real_storage.get_class(name)
+            return self._real_storage.get_class(name, environment)
 
         return MemcacheProxy._cache_proxy(name, self._classes_cache,
                                           self._real_storage.get_class)
