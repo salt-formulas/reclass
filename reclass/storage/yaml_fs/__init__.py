@@ -98,7 +98,7 @@ class ExternalNodeStorage(NodeStorageBase):
         entity = YamlData.from_file(path).get_entity(name)
         return entity
 
-    def get_class(self, name, environment=None):
+    def get_class(self, name, environment):
         vvv('GET CLASS {0}'.format(name))
         try:
             path = os.path.join(self.classes_uri, self._classes[name])
