@@ -34,7 +34,7 @@ class MemcacheProxy(NodeStorageBase):
         if not self._cache_nodes:
             return self._real_storage.get_node(name)
         try:
-            ret = self._nodes_cache[name]
+            return self._nodes_cache[name]
         except KeyError, e:
             ret = self._real_storage.get_node(name)
             self._nodes_cache[name] = ret
@@ -44,10 +44,12 @@ class MemcacheProxy(NodeStorageBase):
         if not self._cache_classes:
             return self._real_storage.get_class(name, environment)
         try:
-            ret = self._classes_cache[name]
+            return self._classes_cache[environment][name]
         except KeyError, e:
+            if environment not in self._classes_cache:
+                self._classes_cache[environment] = dict()
             ret = self._real_storage.get_class(name, environment)
-            self._classes_cache[name] = ret
+            self._classes_cache[environment][name] = ret
         return ret
 
     def enumerate_nodes(self):
