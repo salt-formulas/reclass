@@ -51,8 +51,8 @@ class ExternalNodeStorage(NodeStorageBase):
         return self._nodes_storage.get_node(name)
 
     def get_class(self, name, environment):
-        if environment is None:
-            storage = self._classes_default_storage
-        else:
-            storage = self._classes_storage[environment]
+        storage = self._classes_storage.get(environment, self._classes_default_storage)
         return storage.get_class(name, environment=environment)
+
+    def enumerate_nodes(self):
+        return self._nodes_storage.enumerate_nodes()
