@@ -68,13 +68,17 @@ class YamlData(object):
         exports = datatypes.Exports(exports)
 
         if name is None:
-            name = self._path
+            name = self._uri
 
         env = self._data.get('environment', None)
 
         return datatypes.Entity(classes, applications, parameters, exports,
                                 name=name, environment=env, uri=self.uri)
 
+    def __str__(self):
+        return '<{0} {1}, {2}>'.format(self.__class__.__name__, self._uri,
+                                       self._data)
+
     def __repr__(self):
-        return '<{0} {1}, {2}>'.format(self.__class__.__name__, self._path,
+        return '<{0} {1}, {2}>'.format(self.__class__.__name__, self._uri,
                                        self._data.keys())
