@@ -6,7 +6,13 @@
 import collections
 import fnmatch
 import os
-import pygit2
+
+# Squelch warning on centos7 due to upgrading cffi
+# see https://github.com/saltstack/salt/pull/39871
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    import pygit2
 
 import reclass.errors
 from reclass.storage import NodeStorageBase
