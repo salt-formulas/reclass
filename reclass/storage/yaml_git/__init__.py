@@ -69,7 +69,7 @@ class GitRepo(object):
         return files
 
     def files_in_branch(self, branch):
-        tree = self.repo.revparse_single('master').tree
+        tree = self.repo.revparse_single(branch).tree
         return self.files_in_tree(tree, '')
 
     def files_in_repo(self):
