@@ -7,12 +7,12 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 RECLASS_NAME = 'reclass'
-DESCRIPTION = 'merge data by recursive descent down an ancestry hierarchy'
-VERSION = '1.4.1'
-AUTHOR = 'martin f. krafft'
-AUTHOR_EMAIL = 'reclass@pobox.madduck.net'
-MAINTAINER = 'Jason Ritzke (@Rtzq0)'
-MAINTAINER_EMAIL = 'jasonritzke@4loopz.com'
-COPYRIGHT = 'Copyright © 2007–14 ' + AUTHOR
+DESCRIPTION = 'merge data by recursive descent down an ancestry hierarchy (forked extended version)'
+VERSION = '1.5'
+AUTHOR = 'martin f. krafft / Andrew Pickford'
+AUTHOR_EMAIL = 'andrewp@nikhef.nl'
+MAINTAINER = 'Andrew Pickford'
+MAINTAINER_EMAIL = ''
+COPYRIGHT = 'Copyright © 2007–14 martin f. krafft, extentions © 2017 Andrew Pickford'
 LICENCE = 'Artistic Licence 2.0'
-URL = 'https://github.com/madduck/reclass'
+URL = 'https://github.com/AndrewPickford/reclass'
