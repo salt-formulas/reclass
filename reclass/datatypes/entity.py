@@ -102,13 +102,10 @@ class Entity(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "%s(%r, %r, %r, %r, uri=%r, name=%r)" % (self.__class__.__name__,
-                                                    self.classes,
-                                                    self.applications,
-                                                    self.parameters,
-                                                    self.exports,
-                                                    self.uri,
-                                                    self.name)
+        return "%s(%r, %r, %r, %r, uri=%r, name=%r, environment=%r)" % (
+                   self.__class__.__name__, self.classes, self.applications,
+                   self.parameters, self.exports, self.uri, self.name,
+                   self.environment)
 
     def as_dict(self):
         return {'classes': self._classes.as_list(),
