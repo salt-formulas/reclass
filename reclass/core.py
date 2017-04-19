@@ -120,7 +120,7 @@ class Core(object):
                     raise e
 
                 descent = self._recurse_entity(class_entity, seen=seen,
-                                               nodename=nodename)
+                                               nodename=nodename, environment=environment)
                 # on every iteration, we merge the result of the recursive
                 # descent into what we have so far…
                 merge_base.merge(descent)
