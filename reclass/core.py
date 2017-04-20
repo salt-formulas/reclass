@@ -132,9 +132,10 @@ class Core(object):
         merge_base.merge(entity)
         return merge_base
 
-    def _get_automatic_parameters(self, nodename):
+    def _get_automatic_parameters(self, nodename, environment):
         if AUTOMATIC_RECLASS_PARAMETERS:
-            return Parameters({ '_reclass_': { 'name': { 'full': nodename, 'short': string.split(nodename, '.')[0] } } })
+            return Parameters({ '_reclass_': { 'name': { 'full': nodename, 'short': string.split(nodename, '.')[0] },
+                                               'environment': environment } })
         else:
             return Parameters()
 
@@ -153,7 +154,7 @@ class Core(object):
         base_entity = Entity(name='base')
         base_entity.merge(self._get_class_mappings_entity(node_entity.name))
         base_entity.merge(self._get_input_data_entity())
-        base_entity.merge_parameters(self._get_automatic_parameters(nodename))
+        base_entity.merge_parameters(self._get_automatic_parameters(nodename, node_entity.environment))
         seen = {}
         merge_base = self._recurse_entity(base_entity, seen=seen, nodename=base_entity.name,
                                           environment=node_entity.environment)
