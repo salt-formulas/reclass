@@ -26,6 +26,8 @@ class TestParameters(unittest.TestCase):
         p._base = mock.MagicMock(spec_set=dict, wraps=base)
         p._base.__repr__ = mock.MagicMock(autospec=dict.__repr__,
                                           return_value=repr(base))
+        p._base.__getitem__.side_effect = base.__getitem__
+        p._base.__setitem__.side_effect = base.__setitem__
         return p, p._base
 
     def test_len_empty(self):
@@ -113,9 +115,9 @@ class TestParameters(unittest.TestCase):
         with self.assertRaises(TypeError):
             p.merge('wrong type')
 
-    """def test_get_dict(self):
+    def test_get_dict(self):
         p, b = self._construct_mocked_params(SIMPLE)
-        p.render_simple()
+        p.initialise_interpolation()
         self.assertDictEqual(p.as_dict(), SIMPLE)
 
     def test_merge_scalars(self):
@@ -123,7 +125,7 @@ class TestParameters(unittest.TestCase):
         mergee = {'five':5,'four':4,'None':None,'tuple':(1,2,3)}
         p2, b2 = self._construct_mocked_params(mergee)
         p1.merge(p2)
-        p1.render_simple()
+        p1.initialise_interpolation()
         for key, value in mergee.iteritems():
             # check that each key, value in mergee resulted in a get call and
             # a __setitem__ call against b1 (the merge target)
@@ -135,8 +137,7 @@ class TestParameters(unittest.TestCase):
         p2 = Parameters({'b' : mock.sentinel.goal})
         p1.merge(p2)
         p1.interpolate()
-        p2.render_simple()
-        self.assertEqual(p1.as_dict()['b'], mock.sentinel.goal)"""
+        self.assertEqual(p1.as_dict()['b'], mock.sentinel.goal)
 
 
 class TestParametersNoMock(unittest.TestCase):
