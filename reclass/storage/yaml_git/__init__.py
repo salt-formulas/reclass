@@ -34,15 +34,22 @@ GitMD = collections.namedtuple('GitMD', ['name', 'path', 'id'], verbose=False, r
 class GitURI(object):
 
     def __init__(self, dictionary):
-        self.repo = dictionary.get('repo', None)
-        self.branch = dictionary.get('branch', None)
+        self.repo = None
+        self.branch = None
+        self.root = None
+        self.update(dictionary)
 
     def update(self, dictionary):
         if 'repo' in dictionary: self.repo = dictionary['repo']
         if 'branch' in dictionary: self.branch = dictionary['branch']
+        if 'root' in dictionary:
+            if dictionary['root'] is None:
+                self.root = None
+            else:
+                self.root = dictionary['root'].replace('/', '.')
 
     def __repr__(self):
-        return '<{0}: {1} {2}>'.format(self.__class__.__name__, self.repo, self.branch)
+        return '<{0}: {1} {2} {3}>'.format(self.__class__.__name__, self.repo, self.branch, self.root)
 
 
 class GitRepo(object):
@@ -95,13 +102,15 @@ class GitRepo(object):
             ret[bname] = branch
         return ret
 
-    def nodes(self, branch):
+    def nodes(self, branch, subdir):
         ret = {}
         for name, file in self.files[branch].iteritems():
-            if name in ret:
-                raise reclass.errors.DuplicateNodeNameError(self.name, name, files[name], path)
-            else:
-                ret[name] = file
+            if subdir is None or name.startswith(subdir):
+                node_name = os.path.splitext(file.name)[0]
+                if node_name in ret:
+                    raise reclass.errors.DuplicateNodeNameError(self.name, name, files[name], path)
+                else:
+                    ret[node_name] = file
         return ret
 
 class ExternalNodeStorage(NodeStorageBase):
@@ -112,13 +121,13 @@ class ExternalNodeStorage(NodeStorageBase):
         super(ExternalNodeStorage, self).__init__(STORAGE_NAME)
 
         if nodes_uri is not None:
-            self._nodes_uri = GitURI({ 'branch': 'master', 'repo': None })
+            self._nodes_uri = GitURI({ 'branch': 'master' })
             self._nodes_uri.update(nodes_uri)
             self._load_repo(self._nodes_uri.repo)
-            self._nodes = self._repos[self._nodes_uri.repo].nodes(self._nodes_uri.branch)
+            self._nodes = self._repos[self._nodes_uri.repo].nodes(self._nodes_uri.branch, self._nodes_uri.root)
 
         if classes_uri is not None:
-            self._classes_default_uri = GitURI({ 'branch': '__env__', 'repo': None })
+            self._classes_default_uri = GitURI({ 'branch': '__env__' })
             self._classes_default_uri.update(classes_uri)
             self._load_repo(self._classes_default_uri.repo)
 
@@ -126,7 +135,7 @@ class ExternalNodeStorage(NodeStorageBase):
             if 'env_overrides' in classes_uri:
                 for override in classes_uri['env_overrides']:
                     for env, options in override.iteritems():
-                        uri = GitURI({ 'branch': env, 'repo': self._classes_default_uri.repo })
+                        uri = GitURI({ 'branch': env, 'repo': self._classes_default_uri.repo, 'root': self._classes_default_uri.root })
                         uri.update(options)
                         self._classes_uri.append((env, uri))
                         self._load_repo(uri.repo)
@@ -144,6 +153,8 @@ class ExternalNodeStorage(NodeStorageBase):
 
     def get_class(self, name, environment):
         uri = self._env_to_uri(environment)
+        if uri.root is not None:
+            name = '{0}.{1}'.format(uri.root, name)
         file = self._repos[uri.repo].files[uri.branch][name]
         blob = self._repos[uri.repo].get(file.id)
         entity = YamlData.from_string(blob.data, 'git_fs://{0}#{1}/{2}'.format(uri.repo, uri.branch, file.path)).get_entity(name)
