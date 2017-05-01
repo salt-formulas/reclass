@@ -56,7 +56,9 @@ class GitRepo(object):
 
     def __init__(self, name):
         self.name = name
-        self.repo = pygit2.Repository(name)
+        if self.name.startswith('file://'):
+            self.name = self.name[7:]
+        self.repo = pygit2.Repository(self.name)
         self.branches = self.repo.listall_branches()
         self.files = self.files_in_repo()
 
