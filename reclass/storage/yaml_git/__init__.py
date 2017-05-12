@@ -39,11 +39,13 @@ class GitURI(object):
         self.repo = None
         self.branch = None
         self.root = None
+        self.cache_dir = None
         self.update(dictionary)
 
     def update(self, dictionary):
         if 'repo' in dictionary: self.repo = dictionary['repo']
         if 'branch' in dictionary: self.branch = dictionary['branch']
+        if 'cache_dir' in dictionary: self.cache_dir = dictionary['cache_dir']
         if 'root' in dictionary:
             if dictionary['root'] is None:
                 self.root = None
@@ -56,18 +58,23 @@ class GitURI(object):
 
 class GitRepo(object):
 
-    def __init__(self, url):
+    def __init__(self, url, cache_dir):
         self.transport, _, self.url = url.partition('://')
         self.name = self.url.replace('/', '_')
         self.credentials = None
         self.remotecallbacks = None
+
+        if cache_dir is None:
+            self.cache_dir = '{0}/{1}/{2}'.format(os.path.expanduser("~"), '.reclass/cache/git', self.name)
+        else:
+            self.cache_dir = '{0}/{1}'.format(cache_dir, self.name)
+
         self._init_repo()
         self._fetch()
         self.branches = self.repo.listall_branches()
         self.files = self.files_in_repo()
 
     def _init_repo(self):
-        self.cache_dir = '{0}/{1}/{2}'.format(os.path.expanduser("~"), '.reclass/cache/git', self.name)
         if os.path.exists(self.cache_dir):
             self.repo = pygit2.Repository(self.cache_dir)
         else:
@@ -182,13 +189,13 @@ class ExternalNodeStorage(NodeStorageBase):
         if nodes_uri is not None:
             self._nodes_uri = GitURI({ 'branch': 'master' })
             self._nodes_uri.update(nodes_uri)
-            self._load_repo(self._nodes_uri.repo)
+            self._load_repo(self._nodes_uri.repo, self._nodes_uri.cache_dir)
             self._nodes = self._repos[self._nodes_uri.repo].nodes(self._nodes_uri.branch, self._nodes_uri.root)
 
         if classes_uri is not None:
             self._classes_default_uri = GitURI({ 'branch': '__env__' })
             self._classes_default_uri.update(classes_uri)
-            self._load_repo(self._classes_default_uri.repo)
+            self._load_repo(self._classes_default_uri.repo, self._classes_default_uri.cache_dir)
 
             self._classes_uri = []
             if 'env_overrides' in classes_uri:
@@ -222,9 +229,9 @@ class ExternalNodeStorage(NodeStorageBase):
     def enumerate_nodes(self):
         return self._nodes.keys()
 
-    def _load_repo(self, url):
+    def _load_repo(self, url, cache_dir):
         if url not in self._repos:
-            self._repos[url] = GitRepo(url)
+            self._repos[url] = GitRepo(url, cache_dir)
 
     def _env_to_uri(self, environment):
         ret = None
