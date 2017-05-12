@@ -40,12 +40,18 @@ class GitURI(object):
         self.branch = None
         self.root = None
         self.cache_dir = None
+        self.pubkey = None
+        self.privkey = None
+        self.password = None
         self.update(dictionary)
 
     def update(self, dictionary):
         if 'repo' in dictionary: self.repo = dictionary['repo']
         if 'branch' in dictionary: self.branch = dictionary['branch']
         if 'cache_dir' in dictionary: self.cache_dir = dictionary['cache_dir']
+        if 'pubkey' in dictionary: self.pubkey = dictionary['pubkey']
+        if 'privkey' in dictionary: self.privkey = dictionary['privkey']
+        if 'password' in dictionary: self.password = dictionary['password']
         if 'root' in dictionary:
             if dictionary['root'] is None:
                 self.root = None
@@ -58,23 +64,22 @@ class GitURI(object):
 
 class GitRepo(object):
 
-    def __init__(self, url, cache_dir):
-        self.transport, _, self.url = url.partition('://')
+    def __init__(self, uri):
+        self.transport, _, self.url = uri.repo.partition('://')
         self.name = self.url.replace('/', '_')
         self.credentials = None
         self.remotecallbacks = None
-
-        if cache_dir is None:
+        if uri.cache_dir is None:
             self.cache_dir = '{0}/{1}/{2}'.format(os.path.expanduser("~"), '.reclass/cache/git', self.name)
         else:
-            self.cache_dir = '{0}/{1}'.format(cache_dir, self.name)
+            self.cache_dir = '{0}/{1}'.format(uri.cache_dir, self.name)
 
-        self._init_repo()
+        self._init_repo(uri)
         self._fetch()
         self.branches = self.repo.listall_branches()
         self.files = self.files_in_repo()
 
-    def _init_repo(self):
+    def _init_repo(self, uri):
         if os.path.exists(self.cache_dir):
             self.repo = pygit2.Repository(self.cache_dir)
         else:
@@ -89,13 +94,19 @@ class GitRepo(object):
                 user, _, _ = self.url.partition('@')
             else:
                 user = 'gitlab'
+
+            if uri.pubkey is not None:
+                creds = pygit2.Keypair(user, uri.pubkey, uri.privkey, uri.password)
+            else:
+                creds = pygit2.KeypairFromAgent(user)
+
             pygit2_version = pygit2.__version__
             if distutils.version.LooseVersion(pygit2_version) >= distutils.version.LooseVersion('0.23.2'):
-                self.remotecallbacks = pygit2.RemoteCallbacks(credentials=pygit2.KeypairFromAgent(user))
+                self.remotecallbacks = pygit2.RemoteCallbacks(credentials=creds)
                 self.credentials = None
             else:
                 self.remotecallbacks = None
-                self.credentials = pygit2.KeypairFromAgent(user)
+                self.credentials = creds
 
     def _fetch(self):
         origin = self.repo.remotes[0]
@@ -189,22 +200,23 @@ class ExternalNodeStorage(NodeStorageBase):
         if nodes_uri is not None:
             self._nodes_uri = GitURI({ 'branch': 'master' })
             self._nodes_uri.update(nodes_uri)
-            self._load_repo(self._nodes_uri.repo, self._nodes_uri.cache_dir)
+            self._load_repo(self._nodes_uri)
             self._nodes = self._repos[self._nodes_uri.repo].nodes(self._nodes_uri.branch, self._nodes_uri.root)
 
         if classes_uri is not None:
             self._classes_default_uri = GitURI({ 'branch': '__env__' })
             self._classes_default_uri.update(classes_uri)
-            self._load_repo(self._classes_default_uri.repo, self._classes_default_uri.cache_dir)
+            self._load_repo(self._classes_default_uri)
 
             self._classes_uri = []
             if 'env_overrides' in classes_uri:
                 for override in classes_uri['env_overrides']:
                     for env, options in override.iteritems():
-                        uri = GitURI({ 'branch': env, 'repo': self._classes_default_uri.repo, 'root': self._classes_default_uri.root })
+                        uri = GitOptions(self._classes_default_uri)
+                        uri.update({ 'branch': env })
                         uri.update(options)
                         self._classes_uri.append((env, uri))
-                        self._load_repo(uri.repo)
+                        self._load_repo(uri)
 
             self._classes_uri.append(('*', self._classes_default_uri))
 
@@ -229,9 +241,9 @@ class ExternalNodeStorage(NodeStorageBase):
     def enumerate_nodes(self):
         return self._nodes.keys()
 
-    def _load_repo(self, url, cache_dir):
-        if url not in self._repos:
-            self._repos[url] = GitRepo(url, cache_dir)
+    def _load_repo(self, uri):
+        if uri.repo not in self._repos:
+            self._repos[uri.repo] = GitRepo(uri)
 
     def _env_to_uri(self, environment):
         ret = None
