@@ -1,2 +1,3 @@
 pyparsing
 pyyaml
+pygit2
