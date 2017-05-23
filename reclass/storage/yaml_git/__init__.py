@@ -192,10 +192,9 @@ class GitRepo(object):
 
 class ExternalNodeStorage(NodeStorageBase):
 
-    _repos = dict()
-
     def __init__(self, nodes_uri, classes_uri):
         super(ExternalNodeStorage, self).__init__(STORAGE_NAME)
+        self._repos = dict()
 
         if nodes_uri is not None:
             self._nodes_uri = GitURI({ 'branch': 'master' })
