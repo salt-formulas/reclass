@@ -232,6 +232,8 @@ class ExternalNodeStorage(NodeStorageBase):
         uri = self._env_to_uri(environment)
         if uri.root is not None:
             name = '{0}.{1}'.format(uri.root, name)
+        if uri.branch not in self._repos[uri.repo].files:
+            raise reclass.errors.NotFoundError("Branch " + uri.branch + " missing from " + uri.repo)
         file = self._repos[uri.repo].files[uri.branch][name]
         blob = self._repos[uri.repo].get(file.id)
         entity = YamlData.from_string(blob.data, 'git_fs://{0}#{1}/{2}'.format(uri.repo, uri.branch, file.path)).get_entity(name)
