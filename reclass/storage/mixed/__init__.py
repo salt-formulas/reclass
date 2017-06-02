@@ -33,7 +33,7 @@ class ExternalNodeStorage(NodeStorageBase):
         if 'env_overrides' in classes_uri:
             for override in classes_uri['env_overrides']:
                 for env, options in override.iteritems():
-                        uri = classes_uri
+                        uri = copy.deepcopy(classes_uri)
                         uri.update(options)
                         uri = self._uri(uri)
                         self._classes_storage[env] = get_storage(uri.storage_type, None, uri.options)
