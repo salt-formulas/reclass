@@ -211,7 +211,7 @@ class ExternalNodeStorage(NodeStorageBase):
             if 'env_overrides' in classes_uri:
                 for override in classes_uri['env_overrides']:
                     for env, options in override.iteritems():
-                        uri = GitOptions(self._classes_default_uri)
+                        uri = GitURI(self._classes_default_uri)
                         uri.update({ 'branch': env })
                         uri.update(options)
                         self._classes_uri.append((env, uri))
