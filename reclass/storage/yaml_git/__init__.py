@@ -7,7 +7,6 @@ import collections
 import distutils.version
 import fnmatch
 import os
-import paramiko
 
 # Squelch warning on centos7 due to upgrading cffi
 # see https://github.com/saltstack/salt/pull/39871
