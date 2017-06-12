@@ -34,11 +34,18 @@ class Entity(object):
     name = property(lambda s: s._name)
     short_name = property(lambda s: s._short_name)
     uri = property(lambda s: s._uri)
-    environment = property(lambda s: s._environment)
     classes = property(lambda s: s._classes)
     applications = property(lambda s: s._applications)
     parameters = property(lambda s: s._parameters)
     exports = property(lambda s: s._exports)
+
+    @property
+    def environment(self):
+        return self._environment
+
+    @environment.setter
+    def environment(self, value):
+        self._environment = value
 
     def _set_classes(self, classes):
         if not isinstance(classes, Classes):
