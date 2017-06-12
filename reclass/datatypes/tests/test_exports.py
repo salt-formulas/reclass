@@ -41,5 +41,12 @@ class TestExportsNoMock(unittest.TestCase):
         p.interpolate(e)
         self.assertEqual(p.as_dict(), r)
 
+    def test_list_if_expr_exports(self):
+        e = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 3}, 'node3': {'a': 3, 'b': 2}}
+        p = Parameters({'exp': '$[ if exports:b == 2 ]'})
+        r = {'exp': ['node1', 'node3']}
+        p.interpolate(e)
+        self.assertEqual(p.as_dict(), r)
+
 if __name__ == '__main__':
     unittest.main()

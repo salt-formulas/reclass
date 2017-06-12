@@ -13,6 +13,7 @@ from reclass.errors import ExpressionError, ParseError, UndefinedVariableError
 
 _OBJ = 'OBJ'
 _TEST = 'TEST'
+_LIST_TEST = 'LIST_TEST'
 
 _VALUE = 'VALUE'
 _IF = 'IF'
@@ -58,6 +59,10 @@ class InvItem(Item):
             token = tokens[0]
             tokens[0] = (_TEST, token)
 
+        def _expr_list_test(string, location, tokens):
+            token = tokens[0]
+            tokens[0] = (_LIST_TEST, token)
+
         white_space = pp.White().suppress()
         end = pp.StringEnd()
         operator = (pp.Literal(_EQUAL) | pp.Literal(_NOT_EQUAL)).setParseAction(_test)
@@ -68,7 +73,8 @@ class InvItem(Item):
         item = integer | number | obj
         expr_var = pp.Group(obj + pp.Optional(white_space) + end).setParseAction(_expr_var)
         expr_test = pp.Group(obj + white_space + begin_if + white_space + item + white_space + operator + white_space + item).setParseAction(_expr_test)
-        expr = pp.Optional(white_space) + (expr_test | expr_var)
+        expr_list_test = pp.Group(begin_if + white_space + item + white_space + operator + white_space + item).setParseAction(_expr_list_test)
+        expr = pp.Optional(white_space) + (expr_test | expr_var | expr_list_test)
         return expr
 
     _parser = _get_parser()
@@ -96,6 +102,13 @@ class InvItem(Item):
         if self._expr_type == _TEST:
             export, parameter, value = self._get_vars(self._expr[2][1], None, None, None)
             export, parameter, value = self._get_vars(self._expr[4][1], export, parameter, value)
+            if parameter is not None:
+                path = parameter
+                path.drop_first()
+                self._refs.append(str(path))
+        elif self._expr_type == _LIST_TEST:
+            export, parameter, value = self._get_vars(self._expr[1][1], None, None, None)
+            export, parameter, value = self._get_vars(self._expr[3][1], export, parameter, value)
             if parameter is not None:
                 path = parameter
                 path.drop_first()
@@ -168,6 +181,42 @@ class InvItem(Item):
                     results[node] = copy.deepcopy(self._resolve(value_path, items))
         return results
 
+    def _list_test_expression(self, context, inventory):
+        export_path = None
+        parameter_path = None
+        parameter_value = None
+        test = None
+
+        if self._expr[2][1] == _EQUAL:
+            test = _EQUAL
+        elif self._expr[2][1] == _NOT_EQUAL:
+            test = _NOT_EQUAL
+
+        export_path, parameter_path, parameter_value = self._get_vars(self._expr[1][1], export_path, parameter_path, parameter_value)
+        export_path, parameter_path, parameter_value = self._get_vars(self._expr[3][1], export_path, parameter_path, parameter_value)
+
+        if parameter_path is not None:
+            parameter_path.drop_first()
+            parameter_value = self._resolve(parameter_path, context)
+
+        if export_path is None or parameter_value is None or test is None:
+            ExpressionError('Failed to render %s' % str(self))
+
+        export_path.drop_first()
+
+        results = []
+        for node, items in inventory.iteritems():
+            if export_path.exists_in(items):
+                export_value = self._resolve(export_path, items)
+                test_passed = False
+                if test == _EQUAL and export_value == parameter_value:
+                    test_passed = True
+                elif test == _NOT_EQUAL and export_value != parameter_value:
+                    test_passed = True
+                if test_passed:
+                    results.append(node)
+        return results
+
     def _get_vars(self, var, export, parameter, value):
         if isinstance(var, str):
             path = DictPath(self._delimiter, var)
@@ -186,6 +235,8 @@ class InvItem(Item):
             return self._value_expression(inventory)
         elif self._expr_type == _TEST:
             return self._test_expression(context, inventory)
+        elif self._expr_type == _LIST_TEST:
+            return self._list_test_expression(context, inventory)
         raise ExpressionError('Failed to render %s' % str(self))
 
     def __str__(self):
