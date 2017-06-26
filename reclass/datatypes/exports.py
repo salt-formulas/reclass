@@ -5,6 +5,8 @@
 #
 from parameters import Parameters
 from reclass.errors import UndefinedVariableError
+from reclass.values.value import Value
+from reclass.values.valuelist import ValueList
 
 class Exports(Parameters):
 
@@ -29,10 +31,16 @@ class Exports(Parameters):
         while len(self._unrendered) > 0:
             path, v = self._unrendered.iteritems().next()
             value = path.get_value(self._base)
-            external._interpolate_references(path, value, None)
-            new = self._interpolate_render_from_external(external._base, path, value)
-            path.set_value(self._base, new)
-            del self._unrendered[path]
+            if not isinstance(value, (Value, ValueList)):
+                # references to lists and dicts are only deepcopied when merged
+                # together so it's possible a value with references in a referenced
+                # list or dict has already been rendered
+                del self._unrendered[path]
+            else:
+                external._interpolate_references(path, value, None)
+                new = self._interpolate_render_from_external(external._base, path, value)
+                path.set_value(self._base, new)
+                del self._unrendered[path]
 
     def _interpolate_render_from_external(self, context, path, value):
         try:
