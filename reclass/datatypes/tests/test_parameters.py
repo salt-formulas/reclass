@@ -8,7 +8,7 @@
 #
 from reclass.datatypes import Parameters
 from reclass.defaults import REFERENCE_SENTINELS, ESCAPE_CHARACTER
-from reclass.errors import InfiniteRecursionError
+from reclass.errors import InfiniteRecursionError, InterpolationError
 from reclass.values.mergeoptions import MergeOptions
 import unittest
 try:
@@ -495,6 +495,13 @@ class TestParametersNoMock(unittest.TestCase):
         n2.interpolate()
         self.assertEqual(n1.as_dict(), r1)
         self.assertEqual(n2.as_dict(), r2)
+
+    def test_nested_refs_error_message(self):
+        # beta is missing, oops
+        p1 = Parameters({'alpha': {'one': 1, 'two': 2}, 'gamma': '${alpha:${beta}}'})
+        with self.assertRaises(InterpolationError) as error:
+            p1.interpolate()
+        self.assertEqual(error.exception.message, "Missing references: ['beta'], for path: gamma")
 
 if __name__ == '__main__':
     unittest.main()
