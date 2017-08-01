@@ -308,4 +308,4 @@ class Parameters(object):
                 old = len(value.get_references())
                 value.assembleRefs(self._base)
                 if old == len(value.get_references()):
-                    raise InterpolationError('Missing references: {0}, for path: {1}'.format(value.get_references(), str(path)))
+                    raise InterpolationError('Bad references: {0}, for path: {1}'.format(value.get_references(), str(path)))
