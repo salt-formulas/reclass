@@ -5,13 +5,10 @@
 #
 
 from reclass.datatypes import Exports, Parameters
+from reclass.errors import ParseError
 import unittest
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
 
-class TestExportsNoMock(unittest.TestCase):
+class TestInvQuery(unittest.TestCase):
 
     def test_overwrite_method(self):
         e = Exports({'alpha': { 'one': 1, 'two': 2}})
@@ -20,30 +17,79 @@ class TestExportsNoMock(unittest.TestCase):
         e.initialise_interpolation()
         self.assertEqual(e.as_dict(), d)
 
-    def test_value_expr_exports(self):
+    def test_malformed_invquery(self):
+        with self.assertRaises(ParseError):
+            p = Parameters({'exp': '$[ exports:a exports:b == self:test_value ]'})
+        with self.assertRaises(ParseError):
+            p = Parameters({'exp': '$[ exports:a if exports:b self:test_value ]'})
+        with self.assertRaises(ParseError):
+            p = Parameters({'exp': '$[ exports:a if exports:b == ]'})
+        with self.assertRaises(ParseError):
+            p = Parameters({'exp': '$[ exports:a if exports:b == self:test_value and exports:c = self:test_value2 ]'})
+        with self.assertRaises(ParseError):
+            p = Parameters({'exp': '$[ exports:a if exports:b == self:test_value or exports:c == ]'})
+        with self.assertRaises(ParseError):
+            p = Parameters({'exp': '$[ exports:a if exports:b == self:test_value anddd exports:c == self:test_value2 ]'})
+
+    def test_value_expr_invquery(self):
         e = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}}
         p = Parameters({'exp': '$[ exports:a ]'})
         r = {'exp': {'node1': 1, 'node2': 3}}
         p.interpolate(e)
         self.assertEqual(p.as_dict(), r)
 
-    def test_if_expr_exports(self):
+    def test_if_expr_invquery(self):
         e = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}}
         p = Parameters({'exp': '$[ exports:a if exports:b == 4 ]'})
         r = {'exp': {'node2': 3}}
         p.interpolate(e)
         self.assertEqual(p.as_dict(), r)
 
-    def test_if_expr_exports_with_refs(self):
+    def test_if_expr_invquery_with_refs(self):
         e = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}}
         p = Parameters({'exp': '$[ exports:a if exports:b == self:test_value ]', 'test_value': 2})
         r = {'exp': {'node1': 1}, 'test_value': 2}
         p.interpolate(e)
         self.assertEqual(p.as_dict(), r)
 
-    def test_list_if_expr_exports(self):
+    def test_list_if_expr_invquery(self):
         e = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 3}, 'node3': {'a': 3, 'b': 2}}
         p = Parameters({'exp': '$[ if exports:b == 2 ]'})
+        r = {'exp': ['node1', 'node3']}
+        p.interpolate(e)
+        self.assertEqual(p.as_dict(), r)
+
+    def test_if_expr_invquery_wth_and(self):
+        e = {'node1': {'a': 1, 'b': 4, 'c': False}, 'node2': {'a': 3, 'b': 4, 'c': True}}
+        p = Parameters({'exp': '$[ exports:a if exports:b == 4 and exports:c == True ]'})
+        r = {'exp': {'node2': 3}}
+        p.interpolate(e)
+        self.assertEqual(p.as_dict(), r)
+
+    def test_if_expr_invquery_wth_or(self):
+        e = {'node1': {'a': 1, 'b': 4}, 'node2': {'a': 3, 'b': 3}}
+        p = Parameters({'exp': '$[ exports:a if exports:b == 4 or exports:b == 3 ]'})
+        r = {'exp': {'node1': 1, 'node2': 3}}
+        p.interpolate(e)
+        self.assertEqual(p.as_dict(), r)
+
+    def test_list_if_expr_invquery_with_and(self):
+        e = {'node1': {'a': 1, 'b': 2, 'c': 'green'}, 'node2': {'a': 3, 'b': 3}, 'node3': {'a': 3, 'b': 2, 'c': 'red'}}
+        p = Parameters({'exp': '$[ if exports:b == 2 and exports:c == green ]'})
+        r = {'exp': ['node1']}
+        p.interpolate(e)
+        self.assertEqual(p.as_dict(), r)
+
+    def test_list_if_expr_invquery_with_and_missing(self):
+        e = {'node1': {'a': 1, 'b': 2, 'c': 'green'}, 'node2': {'a': 3, 'b': 3}, 'node3': {'a': 3, 'b': 2}}
+        p = Parameters({'exp': '$[ if exports:b == 2 and exports:c == green ]'})
+        r = {'exp': ['node1']}
+        p.interpolate(e)
+        self.assertEqual(p.as_dict(), r)
+
+    def test_list_if_expr_invquery_with_and(self):
+        e = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 3}, 'node3': {'a': 3, 'b': 4}}
+        p = Parameters({'exp': '$[ if exports:b == 2 or exports:b == 4 ]'})
         r = {'exp': ['node1', 'node3']}
         p.interpolate(e)
         self.assertEqual(p.as_dict(), r)
