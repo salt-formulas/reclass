@@ -21,7 +21,7 @@ SIMPLE = {'one': 1, 'two': 2, 'three': 3}
 class TestParameters(unittest.TestCase):
 
     def _construct_mocked_params(self, iterable=None, delimiter=None):
-        p = Parameters(iterable, delimiter)
+        p = Parameters(iterable, delimiter=delimiter)
         self._base = base = p._base
         p._base = mock.MagicMock(spec_set=dict, wraps=base)
         p._base.__repr__ = mock.MagicMock(autospec=dict.__repr__,

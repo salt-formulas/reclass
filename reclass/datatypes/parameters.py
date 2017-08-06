@@ -16,7 +16,7 @@ from reclass.utils.dictpath import DictPath
 from reclass.values.mergeoptions import MergeOptions
 from reclass.values.value import Value
 from reclass.values.valuelist import ValueList
-from reclass.errors import InfiniteRecursionError, UndefinedVariableError, InterpolationError
+from reclass.errors import InfiniteRecursionError, ResolveError, InterpolationError
 
 class Parameters(object):
     '''
@@ -44,13 +44,14 @@ class Parameters(object):
     DEFAULT_PATH_DELIMITER = PARAMETER_INTERPOLATION_DELIMITER
     DICT_KEY_OVERRIDE_PREFIX = PARAMETER_DICT_KEY_OVERRIDE_PREFIX
 
-    def __init__(self, mapping=None, delimiter=None, options=None):
+    def __init__(self, mapping=None, uri=None, delimiter=None, options=None):
         if delimiter is None:
             delimiter = Parameters.DEFAULT_PATH_DELIMITER
         if options is None:
             options = MergeOptions()
         self._delimiter = delimiter
         self._base = {}
+        self._uri = uri
         self._unrendered = None
         self._escapes_handled = {}
         self._has_inv_query = False
@@ -93,7 +94,7 @@ class Parameters(object):
         elif isinstance(value, (Value, ValueList)):
             return value
         else:
-            return Value(value, self._delimiter)
+            return Value(value, uri=self._uri, delimiter=self._delimiter)
 
     def _wrap_list(self, source):
         return [ self._wrap_value(v) for v in source ]
@@ -107,14 +108,14 @@ class Parameters(object):
         elif isinstance(cur, ValueList):
             values = cur
         else:
-            values = ValueList(Value(cur))
+            values = ValueList(Value(cur, uri=self._uri, delimiter=self._delimiter))
 
         if isinstance(new, Value):
             values.append(new)
         elif isinstance(new, ValueList):
             values.extend(new)
         else:
-            values.append(Value(new))
+            values.append(Value(new, uri=self._uri, delimiter=self._delimiter))
 
         return values
 
@@ -266,8 +267,9 @@ class Parameters(object):
     def _interpolate_render_value(self, path, value, inventory):
         try:
             new = value.render(self._base, inventory, self._options)
-        except UndefinedVariableError as e:
-            raise UndefinedVariableError(e.var, path)
+        except ResolveError as e:
+            e.context = path
+            raise e
 
         if isinstance(new, dict):
             self._render_simple_dict(new, path)

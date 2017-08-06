@@ -6,7 +6,7 @@
 
 from item import Item
 from reclass.utils.dictpath import DictPath
-from reclass.errors import UndefinedVariableError
+from reclass.errors import ResolveError
 
 class RefItem(Item):
 
@@ -31,7 +31,7 @@ class RefItem(Item):
             strings = [ str(i.render(context, None)) for i in self._items ]
             value = "".join(strings)
             self._refs.append(value)
-        except UndefinedVariableError as e:
+        except ResolveError as e:
             self._allRefs = False
 
     def contents(self):
@@ -50,8 +50,8 @@ class RefItem(Item):
         path = DictPath(self._delimiter, ref)
         try:
             return path.get_value(context)
-        except KeyError as e:
-            raise UndefinedVariableError(ref)
+        except (KeyError, TypeError) as e:
+            raise ResolveError(ref)
 
     def render(self, context, inventory):
         if len(self._items) == 1:

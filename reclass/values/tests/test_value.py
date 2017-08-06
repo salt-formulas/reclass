@@ -12,7 +12,7 @@ import pyparsing as pp
 from reclass.values.value import Value
 from reclass.defaults import REFERENCE_SENTINELS, \
         PARAMETER_INTERPOLATION_DELIMITER
-from reclass.errors import UndefinedVariableError, \
+from reclass.errors import ResolveError, \
         IncompleteInterpolationError, ParseError
 import unittest
 
@@ -117,7 +117,7 @@ class TestValue(unittest.TestCase):
     def test_undefined_variable(self):
         s = _var('no_such_variable')
         tv = Value(s)
-        with self.assertRaises(UndefinedVariableError):
+        with self.assertRaises(ResolveError):
             tv.render(CONTEXT, None)
 
     def test_incomplete_variable(self):

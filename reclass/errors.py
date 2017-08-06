@@ -33,9 +33,10 @@ class ReclassException(Exception):
             return 'No error message provided.'
 
     def exit_with_message(self, out=sys.stderr):
-        print >>out, self.message
         if self._traceback:
             print >>out, self._traceback
+        print >>out, self.message
+        print >>out
         sys.exit(self.rc)
 
 
@@ -128,19 +129,24 @@ class InterpolationError(ReclassException):
         super(InterpolationError, self).__init__(rc=rc, msg=msg)
 
 
-class UndefinedVariableError(InterpolationError):
+class ResolveError(InterpolationError):
 
-    def __init__(self, var, context=None):
-        super(UndefinedVariableError, self).__init__(msg=None)
-        self._var = var
-        self._context = context
-    var = property(lambda self: self._var)
-    context = property(lambda self: self._context)
+    def __init__(self, var, uri=None, export=None, context=None):
+        super(ResolveError, self).__init__(msg=None)
+        self.var = var
+        self.context = context
+        self.uri = uri
+        self.export = export
 
     def _get_message(self):
-        msg = "Cannot resolve " + self._var.join(REFERENCE_SENTINELS)
-        if self._context:
-            msg += ' in the context of %s' % self._context
+        msg = ''
+        if self.export:
+            msg = '** InvQuery: %s **\n' % self.export
+        msg += "Cannot resolve " + self.var.join(REFERENCE_SENTINELS)
+        if self.context:
+            msg += ', at %s' % self.context
+        if self.uri:
+            msg += ', in %s' % self.uri
         return msg
 
     def set_context(self, context):

@@ -9,7 +9,7 @@ import pyparsing as pp
 
 from item import Item
 from reclass.utils.dictpath import DictPath
-from reclass.errors import ExpressionError, ParseError, UndefinedVariableError
+from reclass.errors import ExpressionError, ParseError, ResolveError
 
 _OBJ = 'OBJ'
 _TEST = 'TEST'
@@ -72,7 +72,7 @@ class Element(object):
         try:
             return path.get_value(dictionary)
         except KeyError as e:
-            raise UndefinedVariableError(str(path))
+            raise ResolveError(str(path))
 
     def _get_vars(self, var, export, parameter, value):
         if isinstance(var, str):
@@ -246,7 +246,7 @@ class InvItem(Item):
         try:
             return path.get_value(dictionary)
         except KeyError as e:
-            raise UndefinedVariableError(str(path))
+            raise ResolveError(str(path))
 
     def _value_expression(self, inventory):
         results = {}

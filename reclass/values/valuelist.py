@@ -80,8 +80,8 @@ class ValueList(object):
             else:
                 new = value.render(context, inventory)
                 if isinstance(output, dict) and isinstance(new, dict):
-                    p1 = Parameters(output, value._delimiter)
-                    p2 = Parameters(new, value._delimiter)
+                    p1 = Parameters(output, delimiter=value._delimiter)
+                    p2 = Parameters(new, delimiter=value._delimiter)
                     p1.merge(p2)
                     output = p1.as_dict()
                     continue

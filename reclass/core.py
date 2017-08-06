@@ -17,7 +17,7 @@ import string
 import yaml
 from reclass.output.yaml_outputter import ExplicitDumper
 from reclass.datatypes import Entity, Classes, Parameters, Exports
-from reclass.errors import MappingFormatError, ClassNotFound
+from reclass.errors import MappingFormatError, ClassNotFound, ResolveError
 from reclass.defaults import AUTOMATIC_RECLASS_PARAMETERS
 
 class Core(object):
@@ -143,7 +143,11 @@ class Core(object):
         inventory = {}
         for nodename in self._storage.enumerate_nodes():
             node = self._node_entity(nodename)
-            node.interpolate_exports()
+            try:
+                node.interpolate_exports()
+            except ResolveError as e:
+               e.export = nodename
+               raise e
             inventory[nodename] = node.exports.as_dict()
         return inventory
 

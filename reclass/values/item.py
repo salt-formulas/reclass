@@ -5,7 +5,6 @@
 #
 
 from reclass.utils.dictpath import DictPath
-from reclass.errors import UndefinedVariableError
 
 class Item(object):
 

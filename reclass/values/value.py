@@ -9,13 +9,15 @@ from dictitem import DictItem
 from listitem import ListItem
 from scaitem import ScaItem
 from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER
+from reclass.errors import ResolveError
 
 class Value(object):
 
     _parser = Parser()
 
-    def __init__(self, value, delimiter=PARAMETER_INTERPOLATION_DELIMITER):
+    def __init__(self, value, uri=None, delimiter=PARAMETER_INTERPOLATION_DELIMITER):
         self._delimiter = delimiter
+        self._uri = uri
         if isinstance(value, str):
             self._item = self._parser.parse(value, delimiter)
         elif isinstance(value, list):
@@ -48,7 +50,11 @@ class Value(object):
             self._item.assembleRefs(context)
 
     def render(self, context, inventory, options=None):
-        return self._item.render(context, inventory)
+        try:
+            return self._item.render(context, inventory)
+        except ResolveError as e:
+            e.uri = self._uri
+            raise e
 
     def contents(self):
         return self._item.contents()

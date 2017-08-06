@@ -224,7 +224,7 @@ class ExternalNodeStorage(NodeStorageBase):
     def get_node(self, name):
         file = self._nodes[name]
         blob = self._repos[self._nodes_uri.repo].get(file.id)
-        entity = YamlData.from_string(blob.data, 'git_fs://{0}#{1}/{2}'.format(self._nodes_uri.repo, self._nodes_uri.branch, file.path)).get_entity(name)
+        entity = YamlData.from_string(blob.data, 'git_fs://{0} {1} {2}'.format(self._nodes_uri.repo, self._nodes_uri.branch, file.path)).get_entity(name)
         return entity
 
     def get_class(self, name, environment):
@@ -239,7 +239,7 @@ class ExternalNodeStorage(NodeStorageBase):
             raise reclass.errors.NotFoundError("File " + name + " missing from " + uri.repo + " branch " + uri.branch)
         file = self._repos[uri.repo].files[uri.branch][name]
         blob = self._repos[uri.repo].get(file.id)
-        entity = YamlData.from_string(blob.data, 'git_fs://{0}#{1}/{2}'.format(uri.repo, uri.branch, file.path)).get_entity(name)
+        entity = YamlData.from_string(blob.data, 'git_fs://{0} {1} {2}'.format(uri.repo, uri.branch, file.path)).get_entity(name)
         return entity
 
     def enumerate_nodes(self):

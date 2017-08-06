@@ -16,12 +16,13 @@ class YamlData(object):
     @classmethod
     def from_file(cls, path):
         ''' Initialise yaml data from a local file '''
-        if not os.path.isfile(path):
-            raise NotFoundError('No such file: %s' % path)
-        if not os.access(path, os.R_OK):
-            raise NotFoundError('Cannot open: %s' % path)
-        y = cls('yaml_fs://{0}'.format(path))
-        fp = file(path)
+        abs_path = os.path.abspath(path)
+        if not os.path.isfile(abs_path):
+            raise NotFoundError('No such file: %s' % abs_path)
+        if not os.access(abs_path, os.R_OK):
+            raise NotFoundError('Cannot open: %s' % abs_path)
+        y = cls('yaml_fs://{0}'.format(abs_path))
+        fp = file(abs_path)
         data = yaml.safe_load(fp)
         if data is not None:
             y._data = data
@@ -47,6 +48,9 @@ class YamlData(object):
         return self._data
 
     def get_entity(self, name=None):
+        if name is None:
+            name = self._uri
+
         classes = self._data.get('classes')
         if classes is None:
             classes = []
@@ -60,15 +64,12 @@ class YamlData(object):
         parameters = self._data.get('parameters')
         if parameters is None:
             parameters = {}
-        parameters = datatypes.Parameters(parameters)
+        parameters = datatypes.Parameters(parameters, uri=self._uri)
 
         exports = self._data.get('exports')
         if exports is None:
             exports = {}
-        exports = datatypes.Exports(exports)
-
-        if name is None:
-            name = self._uri
+        exports = datatypes.Exports(exports, uri=self._uri)
 
         env = self._data.get('environment', None)
 

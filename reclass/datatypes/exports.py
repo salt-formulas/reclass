@@ -4,14 +4,14 @@
 # This file is part of reclass (http://github.com/madduck/reclass)
 #
 from parameters import Parameters
-from reclass.errors import UndefinedVariableError
+from reclass.errors import ResolveError
 from reclass.values.value import Value
 from reclass.values.valuelist import ValueList
 
 class Exports(Parameters):
 
-    def __init__(self, mapping=None, delimiter=None, options=None):
-        super(Exports, self).__init__(mapping, delimiter, options)
+    def __init__(self, mapping=None, uri=None, delimiter=None, options=None):
+        super(Exports, self).__init__(mapping, uri, delimiter, options)
 
     def __repr__(self):
         return '%s(%r, %r)' % (self.__class__.__name__, self._base,
@@ -45,8 +45,9 @@ class Exports(Parameters):
     def _interpolate_render_from_external(self, context, path, value):
         try:
             new = value.render(context, None, self._options)
-        except UndefinedVariableError as e:
-            raise UndefinedVariableError(e.var, path)
+        except ResolveError as e:
+            e.context = path
+            raise e
         if isinstance(new, dict):
             self._render_simple_dict(new, path)
         elif isinstance(new, list):
