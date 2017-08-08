@@ -11,9 +11,7 @@ import copy
 import sys
 import types
 from collections import namedtuple
-from reclass.defaults import *
 from reclass.utils.dictpath import DictPath
-from reclass.values.mergeoptions import MergeOptions
 from reclass.values.value import Value
 from reclass.values.valuelist import ValueList
 from reclass.errors import InfiniteRecursionError, ResolveError, InterpolationError
@@ -41,21 +39,14 @@ class Parameters(object):
     To support these specialities, this class only exposes very limited
     functionality and does not try to be a really mapping object.
     '''
-    DEFAULT_PATH_DELIMITER = PARAMETER_INTERPOLATION_DELIMITER
-    DICT_KEY_OVERRIDE_PREFIX = PARAMETER_DICT_KEY_OVERRIDE_PREFIX
 
-    def __init__(self, mapping=None, uri=None, delimiter=None, options=None):
-        if delimiter is None:
-            delimiter = Parameters.DEFAULT_PATH_DELIMITER
-        if options is None:
-            options = MergeOptions()
-        self._delimiter = delimiter
+    def __init__(self, mapping, settings, uri):
+        self._settings = settings
         self._base = {}
         self._uri = uri
         self._unrendered = None
         self._escapes_handled = {}
         self._has_inv_query = False
-        self._options = options
         self._keep_overrides = False
         if mapping is not None:
             # we initialise by merging
@@ -63,19 +54,18 @@ class Parameters(object):
             self.merge(mapping)
             self._keep_overrides = False
 
-    delimiter = property(lambda self: self._delimiter)
+    #delimiter = property(lambda self: self._delimiter)
 
     def __len__(self):
         return len(self._base)
 
     def __repr__(self):
-        return '%s(%r, %r)' % (self.__class__.__name__, self._base,
-                               self._delimiter)
+        return '%s(%r)' % (self.__class__.__name__, self._base)
 
     def __eq__(self, other):
         return isinstance(other, type(self)) \
                 and self._base == other._base \
-                and self._delimiter == other._delimiter
+                and self._settings == other._settings
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -94,7 +84,7 @@ class Parameters(object):
         elif isinstance(value, (Value, ValueList)):
             return value
         else:
-            return Value(value, uri=self._uri, delimiter=self._delimiter)
+            return Value(value, self._settings, self._uri)
 
     def _wrap_list(self, source):
         return [ self._wrap_value(v) for v in source ]
@@ -104,18 +94,18 @@ class Parameters(object):
 
     def _update_value(self, cur, new, path):
         if isinstance(cur, Value):
-            values = ValueList(cur)
+            values = ValueList(cur, self._settings)
         elif isinstance(cur, ValueList):
             values = cur
         else:
-            values = ValueList(Value(cur, uri=self._uri, delimiter=self._delimiter))
+            values = ValueList(Value(cur, self._settings, self._uri), self._settings)
 
         if isinstance(new, Value):
             values.append(new)
         elif isinstance(new, ValueList):
             values.extend(new)
         else:
-            values.append(Value(new, uri=self._uri, delimiter=self._delimiter))
+            values.append(Value(new, self._settings, self._uri))
 
         return values
 
@@ -139,10 +129,9 @@ class Parameters(object):
         """
 
         ret = cur
-        ovrprfx = Parameters.DICT_KEY_OVERRIDE_PREFIX
         for key, newvalue in new.iteritems():
-            if key.startswith(ovrprfx) and not self._keep_overrides:
-                ret[key.lstrip(ovrprfx)] = newvalue
+            if key.startswith(self._settings.dict_key_override_prefix) and not self._keep_overrides:
+                ret[key.lstrip(self._settings.dict_key_override_prefix)] = newvalue
             else:
                 ret[key] = self._merge_recurse(ret.get(key), newvalue, path.new_subpath(key))
         return ret
@@ -196,7 +185,7 @@ class Parameters(object):
         else:
             raise TypeError('Cannot merge %s objects into %s' % (type(other),
                             self.__class__.__name__))
-        self._base = self._merge_recurse(self._base, wrapped, DictPath(self._delimiter))
+        self._base = self._merge_recurse(self._base, wrapped, DictPath(self._settings.delimiter))
 
     def _render_simple_container(self, container, key, value, path):
             if isinstance(value, ValueList):
@@ -206,7 +195,7 @@ class Parameters(object):
                         self._has_inv_query = True
                     return
                 else:
-                    value = value.merge(self._options)
+                    value = value.merge()
             if isinstance(value, Value) and value.is_container():
                 value = value.contents()
             if isinstance(value, dict):
@@ -221,7 +210,7 @@ class Parameters(object):
                     if value.has_inv_query():
                         self._has_inv_query = True
                 else:
-                    container[key] = value.render(None, None, self._options)
+                    container[key] = value.render(None, None)
 
     def _render_simple_dict(self, dictionary, path):
         for key, value in dictionary.iteritems():
@@ -248,7 +237,7 @@ class Parameters(object):
         if self._unrendered is None:
             self._unrendered = {}
             self._has_inv_query = False
-            self._render_simple_dict(self._base, DictPath(self._delimiter))
+            self._render_simple_dict(self._base, DictPath(self._settings.delimiter))
 
     def _interpolate_inner(self, path, inventory):
         value = path.get_value(self._base)
@@ -266,7 +255,7 @@ class Parameters(object):
 
     def _interpolate_render_value(self, path, value, inventory):
         try:
-            new = value.render(self._base, inventory, self._options)
+            new = value.render(self._base, inventory)
         except ResolveError as e:
             e.context = path
             raise e
@@ -281,7 +270,7 @@ class Parameters(object):
         all_refs = False
         while not all_refs:
             for ref in value.get_references():
-                path_from_ref = DictPath(self._delimiter, ref)
+                path_from_ref = DictPath(self._settings.delimiter, ref)
 
                 if path_from_ref in self._unrendered:
                     if self._unrendered[path_from_ref] is False:
@@ -295,7 +284,7 @@ class Parameters(object):
                         self._interpolate_inner(path_from_ref, inventory)
                 else:
                     # ensure ancestor keys are already dereferenced
-                    ancestor = DictPath(self._delimiter)
+                    ancestor = DictPath(self._settings.delimiter)
                     for k in path_from_ref.key_parts():
                         ancestor = ancestor.new_subpath(k)
                         if ancestor in self._unrendered:

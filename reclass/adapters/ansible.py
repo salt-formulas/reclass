@@ -10,6 +10,9 @@
 # Copyright © 2007–14 martin f. krafft <madduck@madduck.net>
 # Released under the terms of the Artistic Licence 2.0
 #
+# 2017.08.08 Andew Pickford <anpickford@googlemail.com>
+# The ansible adapter has received little testing and may not work at all now.
+
 
 import os, sys, posix, optparse
 
@@ -19,6 +22,7 @@ from reclass.errors import ReclassException
 from reclass.config import find_and_read_configfile, get_options
 from reclass.version import *
 from reclass.constants import MODE_NODEINFO
+from reclass.settings import Settings
 
 def cli():
     try:
@@ -57,7 +61,8 @@ def cli():
 
         storage = get_storage(options.storage_type, options.nodes_uri, options.classes_uri)
         class_mappings = defaults.get('class_mappings')
-        reclass = Core(storage, class_mappings, default_environment=None)
+        settings = Settings(defaults)
+        reclass = Core(storage, class_mappings, settings)
 
         if options.mode == MODE_NODEINFO:
             data = reclass.nodeinfo(options.hostname)

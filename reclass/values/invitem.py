@@ -8,6 +8,7 @@ import copy
 import pyparsing as pp
 
 from item import Item
+from reclass.settings import Settings
 from reclass.utils.dictpath import DictPath
 from reclass.errors import ExpressionError, ParseError, ResolveError
 
@@ -195,9 +196,9 @@ class InvItem(Item):
 
     _parser = _get_parser()
 
-    def __init__(self, item, delimiter):
+    def __init__(self, item, settings):
         self.type = Item.INV_QUERY
-        self._delimiter = delimiter
+        self._settings = settings
         self._parse_expression(item.render(None, None))
 
     def _parse_expression(self, expr):
@@ -213,16 +214,16 @@ class InvItem(Item):
             raise ExpressionError('Failed to parse %s' % str(self._expr))
 
         if self._expr_type == _VALUE:
-            self._value_path = DictPath(self._delimiter, self._expr[0][1]).drop_first()
-            self._question = Question([], self._delimiter)
+            self._value_path = DictPath(self._settings.delimiter, self._expr[0][1]).drop_first()
+            self._question = Question([], self._settings.delimiter)
             self._refs = []
         elif self._expr_type == _TEST:
-            self._value_path = DictPath(self._delimiter, self._expr[0][1]).drop_first()
-            self._question = Question(self._expr[2:], self._delimiter)
+            self._value_path = DictPath(self._settings.delimiter, self._expr[0][1]).drop_first()
+            self._question = Question(self._expr[2:], self._settings.delimiter)
             self._refs = self._question.refs()
         elif self._expr_type == _LIST_TEST:
             self._value_path = None
-            self._question = Question(self._expr[1:], self._delimiter)
+            self._question = Question(self._expr[1:], self._settings.delimiter)
             self._refs = self._question.refs()
         else:
             raise ExpressionError('Unknown expression type: %s' % self._expr_type)

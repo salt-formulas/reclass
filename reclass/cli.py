@@ -11,9 +11,10 @@ import sys, os, posix
 
 from reclass import get_storage, output
 from reclass.core import Core
+from reclass.settings import Settings
 from reclass.config import find_and_read_configfile, get_options
-from reclass.errors import ReclassException
 from reclass.defaults import *
+from reclass.errors import ReclassException
 from reclass.constants import MODE_NODEINFO
 from reclass.version import *
 
@@ -28,7 +29,9 @@ def main():
         options = get_options(RECLASS_NAME, VERSION, DESCRIPTION, defaults=defaults)
         storage = get_storage(options.storage_type, options.nodes_uri, options.classes_uri)
         class_mappings = defaults.get('class_mappings')
-        reclass = Core(storage, class_mappings, default_environment='base', ignore_class_notfound=options.ignore_class_notfound, ignore_class_regexp=options.ignore_class_regexp)
+        settings = Settings(defaults)
+        # TODO: consolidate ignore_* to settings
+        reclass = Core(storage, class_mappings, settings, ignore_class_notfound=options.ignore_class_notfound, ignore_class_regexp=options.ignore_class_regexp)
 
         if options.mode == MODE_NODEINFO:
             data = reclass.nodeinfo(options.nodename)

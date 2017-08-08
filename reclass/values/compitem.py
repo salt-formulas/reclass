@@ -4,13 +4,15 @@
 # This file is part of reclass
 #
 
+from reclass.settings import Settings
 from item import Item
 
 class CompItem(Item):
 
-    def __init__(self, items):
+    def __init__(self, items, settings):
         self.type = Item.COMPOSITE
         self._items = items
+        self._settings = settings
         self._refs = []
         self._allRefs = False
         self.assembleRefs()

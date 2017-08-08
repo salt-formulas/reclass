@@ -5,14 +5,15 @@
 #
 
 from item import Item
+from reclass.settings import Settings
 from reclass.utils.dictpath import DictPath
 from reclass.errors import ResolveError
 
 class RefItem(Item):
 
-    def __init__(self, items, delimiter):
+    def __init__(self, items, settings):
         self.type = Item.REFERENCE
-        self._delimiter = delimiter
+        self._settings = settings
         self._items = items
         self._refs = []
         self._allRefs = False
@@ -47,7 +48,7 @@ class RefItem(Item):
         return self._refs
 
     def _resolve(self, ref, context):
-        path = DictPath(self._delimiter, ref)
+        path = DictPath(self._settings.delimiter, ref)
         try:
             return path.get_value(context)
         except (KeyError, TypeError) as e:

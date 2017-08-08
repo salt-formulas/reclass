@@ -5,12 +5,14 @@
 #
 
 from item import Item
+from reclass.settings import Settings
 
 class ListItem(Item):
 
-    def __init__(self, item):
+    def __init__(self, item, settings):
         self.type = Item.LIST
         self._list = item
+        self._settings = settings
 
     def contents(self):
         return self._list
@@ -21,14 +23,14 @@ class ListItem(Item):
     def render(self, context, inventory):
         return self._list
 
-    def merge_over(self, item, options):
+    def merge_over(self, item):
         if item.type == Item.LIST:
             item._list.extend(self._list)
             return item
         elif item.type == Item.SCALAR:
             if item.contents() is None:
                 return self
-            elif options.allow_list_over_scalar:
+            elif self._settings.allow_list_over_scalar:
                 self._list.insert(0, item.contents())
                 return self
             else:

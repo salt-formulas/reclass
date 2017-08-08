@@ -14,11 +14,11 @@ class NodeStorageBase(object):
 
     name = property(lambda self: self._name)
 
-    def get_node(self, name, merge_base=None):
+    def get_node(self, name, settings):
         msg = "Storage class '{0}' does not implement node entity retrieval."
         raise NotImplementedError(msg.format(self.name))
 
-    def get_class(self, name):
+    def get_class(self, name, environment, settings):
         msg = "Storage class '{0}' does not implement class entity retrieval."
         raise NotImplementedError(msg.format(self.name))
 

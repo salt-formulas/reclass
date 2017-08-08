@@ -8,7 +8,8 @@ import copy
 
 class ValueList(object):
 
-    def __init__(self, value):
+    def __init__(self, value, settings):
+        self._settings = settings
         self._refs = []
         self._allRefs = True
         self._values = [ value ]
@@ -59,16 +60,16 @@ class ValueList(object):
             if value.allRefs() is False:
                 self._allRefs = False
 
-    def merge(self, options):
+    def merge(self):
         output = None
         for n, value in enumerate(self._values):
             if output is None:
                 output = value
             else:
-                output = value.merge_over(output, options)
+                output = value.merge_over(output)
         return output
 
-    def render(self, context, inventory, options):
+    def render(self, context, inventory):
         from reclass.datatypes.parameters import Parameters
 
         output = None
@@ -80,8 +81,8 @@ class ValueList(object):
             else:
                 new = value.render(context, inventory)
                 if isinstance(output, dict) and isinstance(new, dict):
-                    p1 = Parameters(output, delimiter=value._delimiter)
-                    p2 = Parameters(new, delimiter=value._delimiter)
+                    p1 = Parameters(output, self._settings, None)
+                    p2 = Parameters(new, self._settings, None)
                     p1.merge(p2)
                     output = p1.as_dict()
                     continue

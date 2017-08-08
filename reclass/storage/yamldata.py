@@ -47,9 +47,9 @@ class YamlData(object):
     def get_data(self):
         return self._data
 
-    def get_entity(self, name=None):
-        if name is None:
-            name = self._uri
+    def get_entity(self, name, settings):
+        #if name is None:
+        #    name = self._uri
 
         classes = self._data.get('classes')
         if classes is None:
@@ -64,17 +64,17 @@ class YamlData(object):
         parameters = self._data.get('parameters')
         if parameters is None:
             parameters = {}
-        parameters = datatypes.Parameters(parameters, uri=self._uri)
+        parameters = datatypes.Parameters(parameters, settings, self._uri)
 
         exports = self._data.get('exports')
         if exports is None:
             exports = {}
-        exports = datatypes.Exports(exports, uri=self._uri)
+        exports = datatypes.Exports(exports, settings, self._uri)
 
         env = self._data.get('environment', None)
 
-        return datatypes.Entity(classes, applications, parameters, exports,
-                                name=name, environment=env, uri=self.uri)
+        return datatypes.Entity(settings, classes=classes, applications=applications, parameters=parameters,
+                                exports=exports, name=name, environment=env, uri=self.uri)
 
     def __str__(self):
         return '<{0} {1}, {2}>'.format(self.__class__.__name__, self._uri,

@@ -17,18 +17,18 @@ class Entity(object):
     for merging. The name and uri of an Entity will be updated to the name and
     uri of the Entity that is being merged.
     '''
-    def __init__(self, classes=None, applications=None, parameters=None,
+    def __init__(self, settings, classes=None, applications=None, parameters=None,
                  exports=None, uri=None, name=None, environment=None):
+        self._uri = uri or ''
+        self._name = name or ''
         if classes is None: classes = Classes()
         self._set_classes(classes)
         if applications is None: applications = Applications()
         self._set_applications(applications)
-        if parameters is None: parameters = Parameters()
-        if exports is None: exports = Exports()
+        if parameters is None: parameters = Parameters(None, settings, uri)
+        if exports is None: exports = Exports(None, settings, uri)
         self._set_parameters(parameters)
         self._set_exports(exports)
-        self._uri = uri or ''
-        self._name = name or ''
         self._environment = environment
 
     name = property(lambda s: s._name)

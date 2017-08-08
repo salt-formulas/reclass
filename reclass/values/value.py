@@ -8,24 +8,23 @@ from parser import Parser
 from dictitem import DictItem
 from listitem import ListItem
 from scaitem import ScaItem
-from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER
 from reclass.errors import ResolveError
 
 class Value(object):
 
     _parser = Parser()
 
-    def __init__(self, value, uri=None, delimiter=PARAMETER_INTERPOLATION_DELIMITER):
-        self._delimiter = delimiter
+    def __init__(self, value, settings, uri):
+        self._settings = settings
         self._uri = uri
         if isinstance(value, str):
-            self._item = self._parser.parse(value, delimiter)
+            self._item = self._parser.parse(value, self._settings)
         elif isinstance(value, list):
-            self._item = ListItem(value)
+            self._item = ListItem(value, self._settings)
         elif isinstance(value, dict):
-            self._item = DictItem(value)
+            self._item = DictItem(value, self._settings)
         else:
-            self._item = ScaItem(value)
+            self._item = ScaItem(value, self._settings)
 
     def is_container(self):
         return self._item.is_container()
@@ -49,7 +48,7 @@ class Value(object):
         if self._item.has_references():
             self._item.assembleRefs(context)
 
-    def render(self, context, inventory, options=None):
+    def render(self, context, inventory):
         try:
             return self._item.render(context, inventory)
         except ResolveError as e:
@@ -59,8 +58,8 @@ class Value(object):
     def contents(self):
         return self._item.contents()
 
-    def merge_over(self, value, options):
-        self._item = self._item.merge_over(value._item, options)
+    def merge_over(self, value):
+        self._item = self._item.merge_over(value._item)
         return self
 
     def __repr__(self):

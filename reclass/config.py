@@ -11,7 +11,7 @@ import yaml, os, optparse, posix, sys
 
 import errors
 from defaults import *
-from constants import MODE_NODEINFO, MODE_INVENTORY 
+from constants import MODE_NODEINFO, MODE_INVENTORY
 from reclass import get_path_mangler
 
 def make_db_options_group(parser, defaults={}):

@@ -34,7 +34,7 @@ class Item(object):
         msg = "Item class {0} does not implement contents()"
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
-    def merge_over(self, item, options):
+    def merge_over(self, item):
         msg = "Item class {0} does not implement merge_over()"
         raise NotImplementedError(msg.format(self.__class__.__name__))
 

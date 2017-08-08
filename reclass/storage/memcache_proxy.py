@@ -30,25 +30,25 @@ class MemcacheProxy(NodeStorageBase):
 
     name = property(lambda self: self._real_storage.name)
 
-    def get_node(self, name):
+    def get_node(self, name, settings):
         if not self._cache_nodes:
-            return self._real_storage.get_node(name)
+            return self._real_storage.get_node(name, settings)
         try:
             return self._nodes_cache[name]
         except KeyError, e:
-            ret = self._real_storage.get_node(name)
+            ret = self._real_storage.get_node(name, settings)
             self._nodes_cache[name] = ret
         return ret
 
-    def get_class(self, name, environment):
+    def get_class(self, name, environment, settings):
         if not self._cache_classes:
-            return self._real_storage.get_class(name, environment)
+            return self._real_storage.get_class(name, environment, settings)
         try:
             return self._classes_cache[environment][name]
         except KeyError, e:
             if environment not in self._classes_cache:
                 self._classes_cache[environment] = dict()
-            ret = self._real_storage.get_class(name, environment)
+            ret = self._real_storage.get_class(name, environment, settings)
             self._classes_cache[environment][name] = ret
         return ret
 

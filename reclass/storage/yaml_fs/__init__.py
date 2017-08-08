@@ -87,7 +87,7 @@ class ExternalNodeStorage(NodeStorageBase):
         d.walk(register_fn)
         return ret
 
-    def get_node(self, name):
+    def get_node(self, name, settings):
         vvv('GET NODE {0}'.format(name))
         try:
             relpath = self._nodes[name]
@@ -95,16 +95,16 @@ class ExternalNodeStorage(NodeStorageBase):
             name = os.path.splitext(relpath)[0]
         except KeyError, e:
             raise reclass.errors.NodeNotFound(self.name, name, self.nodes_uri)
-        entity = YamlData.from_file(path).get_entity(name)
+        entity = YamlData.from_file(path).get_entity(name, settings)
         return entity
 
-    def get_class(self, name, environment):
+    def get_class(self, name, environment, setings):
         vvv('GET CLASS {0}'.format(name))
         try:
             path = os.path.join(self.classes_uri, self._classes[name])
         except KeyError, e:
             raise reclass.errors.ClassNotFound(self.name, name, self.classes_uri)
-        entity = YamlData.from_file(path).get_entity(name)
+        entity = YamlData.from_file(path).get_entity(name, settings)
         return entity
 
     def enumerate_nodes(self):

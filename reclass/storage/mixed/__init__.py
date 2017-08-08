@@ -47,12 +47,12 @@ class ExternalNodeStorage(NodeStorageBase):
             ret = ret['uri']
         return self.MixedUri(uri['storage_type'], ret)
 
-    def get_node(self, name):
-        return self._nodes_storage.get_node(name)
+    def get_node(self, name, settings):
+        return self._nodes_storage.get_node(name, settings)
 
-    def get_class(self, name, environment):
+    def get_class(self, name, environment, settings):
         storage = self._classes_storage.get(environment, self._classes_default_storage)
-        return storage.get_class(name, environment=environment)
+        return storage.get_class(name, environment, settings)
 
     def enumerate_nodes(self):
         return self._nodes_storage.enumerate_nodes()

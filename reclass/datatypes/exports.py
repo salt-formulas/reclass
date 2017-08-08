@@ -10,12 +10,11 @@ from reclass.values.valuelist import ValueList
 
 class Exports(Parameters):
 
-    def __init__(self, mapping=None, uri=None, delimiter=None, options=None):
-        super(Exports, self).__init__(mapping, uri, delimiter, options)
+    def __init__(self, mapping, settings, uri):
+        super(Exports, self).__init__(mapping, settings, uri)
 
     def __repr__(self):
-        return '%s(%r, %r)' % (self.__class__.__name__, self._base,
-                               self.delimiter)
+        return '%s(%r)' % (self.__class__.__name__, self._base)
 
     def delete_key(self, key):
         self._base.pop(key, None)
@@ -44,7 +43,7 @@ class Exports(Parameters):
 
     def _interpolate_render_from_external(self, context, path, value):
         try:
-            new = value.render(context, None, self._options)
+            new = value.render(context, None)
         except ResolveError as e:
             e.context = path
             raise e
