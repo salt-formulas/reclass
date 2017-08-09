@@ -498,7 +498,7 @@ class TestParametersNoMock(unittest.TestCase):
         p1 = Parameters({'alpha': {'one': 1, 'two': 2}, 'gamma': '${alpha:${beta}}'}, SETTINGS, '')
         with self.assertRaises(InterpolationError) as error:
             p1.interpolate()
-        self.assertEqual(error.exception.message, "=> \n   Bad references: ${beta} for path: gamma")
+        self.assertEqual(error.exception.message, "-> \n   Bad references: ${beta} for path: gamma")
 
 if __name__ == '__main__':
     unittest.main()
