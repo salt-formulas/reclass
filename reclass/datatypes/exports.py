@@ -3,6 +3,9 @@
 #
 # This file is part of reclass (http://github.com/madduck/reclass)
 #
+
+import copy
+
 from parameters import Parameters
 from reclass.errors import ResolveError
 from reclass.values.value import Value
@@ -25,8 +28,6 @@ class Exports(Parameters):
         self.merge(overdict)
 
     def interpolate_from_external(self, external):
-        self._initialise_interpolate()
-        external._initialise_interpolate()
         while len(self._unrendered) > 0:
             path, v = self._unrendered.iteritems().next()
             value = path.get_value(self._base)
@@ -41,12 +42,38 @@ class Exports(Parameters):
                 path.set_value(self._base, new)
                 del self._unrendered[path]
 
+    def interpolate_single_from_external(self, external, query):
+        paths = {}
+        for r in query.get_inv_references():
+            paths[r] = True
+        while len(paths) > 0:
+            path, v = paths.iteritems().next()
+            if path.exists_in(self._base) and path in self._unrendered:
+                value = path.get_value(self._base)
+                if not isinstance(value, (Value, ValueList)):
+                    del paths[path]
+                    del self._unrendered[path]
+                else:
+                    try:
+                        external._interpolate_references(path, value, None)
+                        new = self._interpolate_render_from_external(external._base, path, value)
+                        path.set_value(self._base, new)
+                    except ResolveError as e:
+                        if query.ignore_failed_render():
+                            path.delete(self._base)
+                        else:
+                            raise
+                    del paths[path]
+                    del self._unrendered[path]
+            else:
+                del paths[path]
+
     def _interpolate_render_from_external(self, context, path, value):
         try:
             new = value.render(context, None)
         except ResolveError as e:
             e.context = path
-            raise e
+            raise
         if isinstance(new, dict):
             self._render_simple_dict(new, path)
         elif isinstance(new, list):

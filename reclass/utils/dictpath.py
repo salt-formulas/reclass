@@ -134,6 +134,9 @@ class DictPath(object):
         del self._parts[0]
         return self
 
+    def delete(self, base):
+        del self._get_innermost_container(base)[self._get_key()]
+
     def exists_in(self, container):
         item = container
         for i in self._parts:

@@ -96,6 +96,9 @@ class Entity(object):
         self.initialise_interpolation()
         self._exports.interpolate_from_external(self._parameters)
 
+    def interpolate_single_export(self, references):
+        self._exports.interpolate_single_from_external(self._parameters, references)
+
     def __eq__(self, other):
         return isinstance(other, type(self)) \
                 and self._applications == other._applications \

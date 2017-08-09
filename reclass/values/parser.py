@@ -26,7 +26,7 @@ class Parser(object):
             # speed up: try a simple reference
             try:
                 tokens = self._settings.simple_ref_parser.leaveWhitespace().parseString(value).asList()
-            except pp.ParseException as e:
+            except pp.ParseException:
                 # fall back on the full parser
                 try:
                     tokens = self._settings.ref_parser.leaveWhitespace().parseString(value).asList()

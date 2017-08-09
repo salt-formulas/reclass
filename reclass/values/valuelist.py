@@ -13,7 +13,9 @@ class ValueList(object):
         self._refs = []
         self._allRefs = True
         self._values = [ value ]
+        self._inv_refs = []
         self._has_inv_query = False
+        self._ignore_failed_render = False
         self._update()
 
     def append(self, value):
@@ -25,7 +27,6 @@ class ValueList(object):
         self._update()
 
     def _update(self):
-        self._has_inv_query = False
         self.assembleRefs()
         self._check_for_inv_query()
 
@@ -34,6 +35,9 @@ class ValueList(object):
 
     def has_inv_query(self):
         return self._has_inv_query
+
+    def get_inv_references(self):
+        return self._inv_refs
 
     def is_complex(self):
         return (self.has_references() | self.has_inv_query())
@@ -44,11 +48,20 @@ class ValueList(object):
     def allRefs(self):
         return self._allRefs
 
+    def ignore_failed_render(self):
+        return self._ignore_failed_render
+
     def _check_for_inv_query(self):
         self._has_inv_query = False
+        self._ignore_failed_render = True
         for value in self._values:
             if value.has_inv_query():
+                self._inv_refs.extend(value.get_inv_references)
                 self._has_inv_query = True
+                if vale.ignore_failed_render() is False:
+                    self._ignore_failed_render = False
+        if self._has_inv_query is False:
+            self._ignore_failed_render = False
 
     def assembleRefs(self, context={}):
         self._refs = []

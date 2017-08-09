@@ -14,6 +14,8 @@ class Settings(object):
         self.dict_key_override_prefix = options.get('dict_key_override_prefix', reclass.defaults.PARAMETER_DICT_KEY_OVERRIDE_PREFIX)
         self.escape_character = options.get('escape_character', reclass.defaults.ESCAPE_CHARACTER)
         self.export_sentinels = options.get('export_sentinels', reclass.defaults.EXPORT_SENTINELS)
+        self.inventory_ignore_failed_node = options.get('inventory_ignore_failed_node', reclass.defaults.INVENTORY_IGNORE_FAILED_NODE)
+        self.inventory_ignore_failed_render = options.get('inventory_ignore_failed_render', reclass.defaults.INVENTORY_IGNORE_FAILED_RENDER)
         self.reference_sentinels = options.get('reference_sentinels', reclass.defaults.REFERENCE_SENTINELS)
 
         self.ref_parser = reclass.values.parser_funcs.get_ref_parser(self.escape_character, self.reference_sentinels, self.export_sentinels)

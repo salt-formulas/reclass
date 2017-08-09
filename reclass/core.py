@@ -18,7 +18,7 @@ import yaml
 from reclass.settings import Settings
 from reclass.output.yaml_outputter import ExplicitDumper
 from reclass.datatypes import Entity, Classes, Parameters, Exports
-from reclass.errors import MappingFormatError, ClassNotFound, ResolveError
+from reclass.errors import MappingFormatError, ClassNotFound, ResolveError, InvQueryError, InterpolationError
 
 class Core(object):
 
@@ -118,7 +118,7 @@ class Core(object):
                             print >>sys.stderr, "[WARNING] Reclass class not found: '%s'. Skipped!" % klass
                             continue
                     e.set_nodename(nodename)
-                    raise e
+                    raise
 
                 descent = self._recurse_entity(class_entity, seen=seen,
                                                nodename=nodename, environment=environment)
@@ -140,20 +140,43 @@ class Core(object):
         else:
             return Parameters({}, self._settings, '')
 
-    def _get_inventory(self):
+    def _get_inventory(self, all_envs, environment, queries):
         inventory = {}
         for nodename in self._storage.enumerate_nodes():
-            node = self._node_entity(nodename)
             try:
-                node.interpolate_exports()
-            except ResolveError as e:
-               e.export = nodename
-               raise e
-            inventory[nodename] = node.exports.as_dict()
+                node_base = self._storage.get_node(nodename, self._settings)
+                if node_base.environment == None:
+                    node_base.environment = self._settings.default_environment
+            except yaml.scanner.ScannerError as e:
+                if self._settings.inventory_ignore_failed_node:
+                    continue
+                else:
+                    raise
+
+            if all_envs or node_base.environment == environment:
+                node = self._node_entity(nodename)
+                if queries is None:
+                    try:
+                        node.interpolate_exports()
+                    except ResolveError as e:
+                        e.nodename = nodename
+                else:
+                    node.initialise_interpolation()
+                    for p, q in queries:
+                        try:
+                            node.interpolate_single_export(q)
+                        except ResolveError as e:
+                            e.nodename = nodename
+                            raise InvQueryError(q.contents(), e, context=p, uri=q.uri())
+                inventory[nodename] = node.exports.as_dict()
         return inventory
 
     def _node_entity(self, nodename):
-        node_entity = self._storage.get_node(nodename, self._settings)
+        try:
+            node_entity = self._storage.get_node(nodename, self._settings)
+        except InterpolationError as e:
+            e.nodename = nodename
+            raise
         if node_entity.environment == None:
             node_entity.environment = self._settings.default_environment
         base_entity = Entity(self._settings, name='base')
@@ -170,8 +193,16 @@ class Core(object):
         ret = self._node_entity(nodename)
         ret.initialise_interpolation()
         if ret.parameters.has_inv_query() and inventory is None:
-            inventory = self._get_inventory()
-        ret.interpolate(nodename, inventory)
+            try:
+                inventory = self._get_inventory(ret.parameters.needs_all_envs(), ret.environment, ret.parameters.get_inv_queries())
+            except InvQueryError as e:
+                e.nodename = nodename
+                raise e
+        try:
+            ret.interpolate(nodename, inventory)
+        except ResolveError as e:
+            e.nodename = nodename
+            raise
         return ret
 
     def _nodeinfo_as_dict(self, nodename, entity):
@@ -190,7 +221,7 @@ class Core(object):
     def inventory(self):
         query_nodes = set()
         entities = {}
-        inventory = self._get_inventory()
+        inventory = self._get_inventory(True, '', None)
         for n in self._storage.enumerate_nodes():
             entities[n] = self._nodeinfo(n, inventory)
             if entities[n].parameters.has_inv_query():

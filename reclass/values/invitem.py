@@ -16,6 +16,7 @@ _OBJ = 'OBJ'
 _TEST = 'TEST'
 _LIST_TEST = 'LIST_TEST'
 _LOGICAL = 'LOGICAL'
+_OPTION = 'OPTION'
 
 _VALUE = 'VALUE'
 _IF = 'IF'
@@ -25,6 +26,8 @@ _OR = 'OR'
 _EQUAL = '=='
 _NOT_EQUAL = '!='
 
+_IGNORE_ERRORS = '+IgnoreErrors'
+_ALL_ENVS = '+AllEnvs'
 
 class Element(object):
 
@@ -35,7 +38,13 @@ class Element(object):
         self._parameter_value = None
         self._export_path, self._parameter_path, self._parameter_value = self._get_vars(expression[0][1], self._export_path, self._parameter_path, self._parameter_value)
         self._export_path, self._parameter_path, self._parameter_value = self._get_vars(expression[2][1], self._export_path, self._parameter_path, self._parameter_value)
-        self._export_path.drop_first()
+
+        try:
+            self._export_path.drop_first()
+        except AttributeError:
+            raise ExpressionError('No export')
+
+        self._inv_refs = [ self._export_path ]
         self._test = expression[1][1]
 
         if self._parameter_path is not None:
@@ -47,12 +56,15 @@ class Element(object):
     def refs(self):
         return self._refs
 
+    def inv_refs(self):
+        return self._inv_refs
+
     def value(self, context, items):
         if self._parameter_path is not None:
             self._parameter_value = self._resolve(self._parameter_path, context)
 
-        if self._export_path is None or self._parameter_value is None or self._test is None:
-            ExpressionError('Failed to render %s' % str(self))
+        if self._parameter_value is None or self._test is None:
+            raise ExpressionError('Failed to render %s' % str(self))
 
         if self._export_path.exists_in(items):
             result = False
@@ -100,11 +112,13 @@ class Question(object):
         self._operators = []
         self._delimiter = delimiter
         self._refs = []
+        self._inv_refs = []
         i = 0
         while i < len(expression):
             e = Element(expression[i:], self._delimiter)
             self._elements.append(e)
             self._refs.extend(e.refs())
+            self._inv_refs.extend(e.inv_refs())
             i += 3
             if i < len(expression):
                 self._operators.append(expression[i][1])
@@ -112,6 +126,9 @@ class Question(object):
 
     def refs(self):
         return self._refs
+
+    def inv_refs(self):
+        return self._inv_refs
 
     def value(self, context, items):
         if len(self._elements) == 0:
@@ -153,6 +170,10 @@ class InvItem(Item):
                 token = tokens[0]
             tokens[0] = (_OBJ, token)
 
+        def _option(string, location, tokens):
+            token = tokens[0]
+            tokens[0] = (_OPTION, token)
+
         def _test(string, location, tokens):
             token = tokens[0]
             tokens[0] = (_TEST, token)
@@ -179,6 +200,10 @@ class InvItem(Item):
 
         white_space = pp.White().suppress()
         end = pp.StringEnd()
+        ignore_errors = pp.CaselessLiteral(_IGNORE_ERRORS)
+        all_envs = pp.CaselessLiteral(_ALL_ENVS)
+        option = (ignore_errors | all_envs).setParseAction(_option)
+        options = pp.Group(pp.ZeroOrMore(option + white_space))
         operator_test = (pp.Literal(_EQUAL) | pp.Literal(_NOT_EQUAL)).setParseAction(_test)
         operator_logical = (pp.CaselessLiteral(_AND) | pp.CaselessLiteral(_OR)).setParseAction(_logical)
         begin_if = pp.CaselessLiteral(_IF, ).setParseAction(_if)
@@ -191,15 +216,19 @@ class InvItem(Item):
         expr_var = pp.Group(obj + pp.Optional(white_space) + end).setParseAction(_expr_var)
         expr_test = pp.Group(obj + white_space + begin_if + single_test + pp.ZeroOrMore(additional_test) + end).setParseAction(_expr_test)
         expr_list_test = pp.Group(begin_if + single_test + pp.ZeroOrMore(additional_test) + end).setParseAction(_expr_list_test)
-        expr = pp.Optional(white_space) + (expr_test | expr_var | expr_list_test)
-        return expr
+        expr = (expr_test | expr_var | expr_list_test)
+        line = options + expr + end
+        return line
 
     _parser = _get_parser()
 
     def __init__(self, item, settings):
         self.type = Item.INV_QUERY
         self._settings = settings
-        self._parse_expression(item.render(None, None))
+        self._needs_all_envs = False
+        self._ignore_failed_render = self._settings.inventory_ignore_failed_render
+        self._expr_text = item.render(None, None)
+        self._parse_expression(self._expr_text)
 
     def _parse_expression(self, expr):
         try:
@@ -210,21 +239,33 @@ class InvItem(Item):
         if len(tokens) == 1:
             self._expr_type = tokens[0][0]
             self._expr = list(tokens[0][1])
+        elif len(tokens) == 2:
+            for opt in tokens[0]:
+                if opt[1] == _IGNORE_ERRORS:
+                    self._ignore_failed_render = True
+                elif opt[1] == _ALL_ENVS:
+                    self._needs_all_envs = True
+            self._expr_type = tokens[1][0]
+            self._expr = list(tokens[1][1])
         else:
-            raise ExpressionError('Failed to parse %s' % str(self._expr))
+            raise ExpressionError('Failed to parse %s' % str(tokens))
 
         if self._expr_type == _VALUE:
             self._value_path = DictPath(self._settings.delimiter, self._expr[0][1]).drop_first()
             self._question = Question([], self._settings.delimiter)
             self._refs = []
+            self._inv_refs = [ self._value_path ]
         elif self._expr_type == _TEST:
             self._value_path = DictPath(self._settings.delimiter, self._expr[0][1]).drop_first()
             self._question = Question(self._expr[2:], self._settings.delimiter)
             self._refs = self._question.refs()
+            self._inv_refs = self._question.inv_refs()
+            self._inv_refs.append(self._value_path)
         elif self._expr_type == _LIST_TEST:
             self._value_path = None
             self._question = Question(self._expr[1:], self._settings.delimiter)
             self._refs = self._question.refs()
+            self._inv_refs = self._question.inv_refs()
         else:
             raise ExpressionError('Unknown expression type: %s' % self._expr_type)
 
@@ -232,7 +273,7 @@ class InvItem(Item):
         return
 
     def contents(self):
-        return self._expr
+        return self._expr_text
 
     def has_inv_query(self):
         return True
@@ -242,6 +283,15 @@ class InvItem(Item):
 
     def get_references(self):
         return self._question.refs()
+
+    def get_inv_references(self):
+        return self._inv_refs
+
+    def needs_all_envs(self):
+        return self._needs_all_envs
+
+    def ignore_failed_render(self):
+        return self._ignore_failed_render
 
     def _resolve(self, path, dictionary):
         try:

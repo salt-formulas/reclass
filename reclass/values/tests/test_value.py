@@ -11,8 +11,7 @@ import pyparsing as pp
 
 from reclass.settings import Settings
 from reclass.values.value import Value
-from reclass.errors import ResolveError, \
-        IncompleteInterpolationError, ParseError
+from reclass.errors import ResolveError, ParseError
 import unittest
 
 SETTINGS = Settings()

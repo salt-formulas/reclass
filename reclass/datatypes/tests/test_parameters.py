@@ -257,7 +257,7 @@ class TestParametersNoMock(unittest.TestCase):
         self.assertEqual(p.as_dict()['foo'], v)
 
     def test_interpolate_list(self):
-        l = [41,42,43]
+        l = [41, 42, 43]
         d = {'foo': 'bar'.join(SETTINGS.reference_sentinels),
              'bar': l}
         p = Parameters(d, SETTINGS, '')
@@ -498,7 +498,7 @@ class TestParametersNoMock(unittest.TestCase):
         p1 = Parameters({'alpha': {'one': 1, 'two': 2}, 'gamma': '${alpha:${beta}}'}, SETTINGS, '')
         with self.assertRaises(InterpolationError) as error:
             p1.interpolate()
-        self.assertEqual(error.exception.message, "Bad references: ['beta'], for path: gamma")
+        self.assertEqual(error.exception.message, "=> \n   Bad references: ${beta} for path: gamma")
 
 if __name__ == '__main__':
     unittest.main()

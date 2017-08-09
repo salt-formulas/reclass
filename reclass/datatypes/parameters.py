@@ -14,7 +14,7 @@ from collections import namedtuple
 from reclass.utils.dictpath import DictPath
 from reclass.values.value import Value
 from reclass.values.valuelist import ValueList
-from reclass.errors import InfiniteRecursionError, ResolveError, InterpolationError
+from reclass.errors import InfiniteRecursionError, ResolveError, InterpolationError, ParseError, BadReferencesError
 
 class Parameters(object):
     '''
@@ -46,7 +46,8 @@ class Parameters(object):
         self._uri = uri
         self._unrendered = None
         self._escapes_handled = {}
-        self._has_inv_query = False
+        self._inv_queries = []
+        self._needs_all_envs = False
         self._keep_overrides = False
         if mapping is not None:
             # we initialise by merging
@@ -71,28 +72,39 @@ class Parameters(object):
         return not self.__eq__(other)
 
     def has_inv_query(self):
-        return self._has_inv_query
+        return len(self._inv_queries) > 0
+
+    def get_inv_queries(self):
+        return self._inv_queries
+
+    def needs_all_envs(self):
+        return self._needs_all_envs
 
     def as_dict(self):
         return self._base.copy()
 
-    def _wrap_value(self, value):
+    def _wrap_value(self, value, path):
         if isinstance(value, dict):
-            return self._wrap_dict(value)
+            return self._wrap_dict(value, path)
         elif isinstance(value, list):
-            return self._wrap_list(value)
+            return self._wrap_list(value, path)
         elif isinstance(value, (Value, ValueList)):
             return value
         else:
-            return Value(value, self._settings, self._uri)
+            try:
+                return Value(value, self._settings, self._uri)
+            except InterpolationError as e:
+                e.context = str(path)
+                raise
 
-    def _wrap_list(self, source):
-        return [ self._wrap_value(v) for v in source ]
+    def _wrap_list(self, source, path):
+        return [ self._wrap_value(v, path.new_subpath(k)) for (k, v) in enumerate(source) ]
+        #self._wrap_value(v, path.new_subpath()) for v in source ]
 
-    def _wrap_dict(self, source):
-        return { k: self._wrap_value(v) for k, v in source.iteritems() }
+    def _wrap_dict(self, source, path):
+        return { k: self._wrap_value(v, path.new_subpath(k)) for k, v in source.iteritems() }
 
-    def _update_value(self, cur, new, path):
+    def _update_value(self, cur, new):
         if isinstance(cur, Value):
             values = ValueList(cur, self._settings)
         elif isinstance(cur, ValueList):
@@ -161,7 +173,7 @@ class Parameters(object):
         elif isinstance(new, dict) and isinstance(cur, dict):
             return self._merge_dict(cur, new, path)
         else:
-            return self._update_value(cur, new, path)
+            return self._update_value(cur, new)
 
     def merge(self, other):
         """Merge function (public edition).
@@ -179,9 +191,9 @@ class Parameters(object):
 
         self._unrendered = None
         if isinstance(other, dict):
-            wrapped = self._wrap_dict(other)
+            wrapped = self._wrap_dict(other, DictPath(self._settings.delimiter))
         elif isinstance(other, self.__class__):
-            wrapped = self._wrap_dict(other._base)
+            wrapped = self._wrap_dict(other._base, DictPath(self._settings.delimiter))
         else:
             raise TypeError('Cannot merge %s objects into %s' % (type(other),
                             self.__class__.__name__))
@@ -190,9 +202,12 @@ class Parameters(object):
     def _render_simple_container(self, container, key, value, path):
             if isinstance(value, ValueList):
                 if value.is_complex():
-                    self._unrendered[path.new_subpath(key)] = True
+                    p = path.new_subpath(key)
+                    self._unrendered[p] = True
                     if value.has_inv_query():
-                        self._has_inv_query = True
+                        self._inv_queries.append((p, value))
+                        if value.needs_all_envs():
+                            self._needs_all_envs = True
                     return
                 else:
                     value = value.merge()
@@ -206,9 +221,12 @@ class Parameters(object):
                 container[key] = value
             elif isinstance(value, Value):
                 if value.is_complex():
-                    self._unrendered[path.new_subpath(key)] = True
+                    p = path.new_subpath(key)
+                    self._unrendered[p] = True
                     if value.has_inv_query():
-                        self._has_inv_query = True
+                        self._inv_queries.append((p, value))
+                        if value.needs_all_envs():
+                            self._needs_all_envs = True
                 else:
                     container[key] = value.render(None, None)
 
@@ -236,7 +254,8 @@ class Parameters(object):
     def _initialise_interpolate(self):
         if self._unrendered is None:
             self._unrendered = {}
-            self._has_inv_query = False
+            self._inv_queries = []
+            self._needs_all_envs = False
             self._render_simple_dict(self._base, DictPath(self._settings.delimiter))
 
     def _interpolate_inner(self, path, inventory):
@@ -258,7 +277,7 @@ class Parameters(object):
             new = value.render(self._base, inventory)
         except ResolveError as e:
             e.context = path
-            raise e
+            raise
 
         if isinstance(new, dict):
             self._render_simple_dict(new, path)
@@ -299,4 +318,4 @@ class Parameters(object):
                 old = len(value.get_references())
                 value.assembleRefs(self._base)
                 if old == len(value.get_references()):
-                    raise InterpolationError('Bad references: {0}, for path: {1}'.format(value.get_references(), str(path)))
+                    raise BadReferencesError(value.get_references(), str(path))
