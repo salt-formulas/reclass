@@ -64,7 +64,7 @@ class Element(object):
             self._parameter_value = self._resolve(self._parameter_path, context)
 
         if self._parameter_value is None or self._test is None:
-            raise ExpressionError('Failed to render %s' % str(self))
+            raise ExpressionError('Failed to render %s' % str(self), tbFlag=False)
 
         if self._export_path.exists_in(items):
             result = False
@@ -76,7 +76,7 @@ class Element(object):
                 if export_value != self._parameter_value:
                     result = True
             else:
-                raise ExpressionError('Unknown test {0}'.format(self._test))
+                raise ExpressionError('Unknown test {0}'.format(self._test), tbFlag=False)
             return result
         else:
             return False
@@ -144,7 +144,7 @@ class Question(object):
                 elif self._operators[i] == _OR:
                     result = result or next_result
                 else:
-                    raise ExpressionError('Unknown operator {0} {1}'.format(self._operators[i], self.elements))
+                    raise ExpressionError('Unknown operator {0} {1}'.format(self._operators[i], self.elements), tbFlag=False)
             return result
 
 
@@ -248,7 +248,7 @@ class InvItem(Item):
             self._expr_type = tokens[1][0]
             self._expr = list(tokens[1][1])
         else:
-            raise ExpressionError('Failed to parse %s' % str(tokens))
+            raise ExpressionError('Failed to parse %s' % str(tokens), tbFlag=False)
 
         if self._expr_type == _VALUE:
             self._value_path = DictPath(self._settings.delimiter, self._expr[0][1]).drop_first()
@@ -267,7 +267,7 @@ class InvItem(Item):
             self._refs = self._question.refs()
             self._inv_refs = self._question.inv_refs()
         else:
-            raise ExpressionError('Unknown expression type: %s' % self._expr_type)
+            raise ExpressionError('Unknown expression type: %s' % self._expr_type, tbFlag=False)
 
     def assembleRefs(self, context):
         return
@@ -308,7 +308,7 @@ class InvItem(Item):
 
     def _test_expression(self, context, inventory):
         if self._value_path is None:
-            ExpressionError('Failed to render %s' % str(self))
+            ExpressionError('Failed to render %s' % str(self), tbFlag=False)
 
         results = {}
         for node, items in inventory.iteritems():
@@ -330,7 +330,7 @@ class InvItem(Item):
             return self._test_expression(context, inventory)
         elif self._expr_type == _LIST_TEST:
             return self._list_test_expression(context, inventory)
-        raise ExpressionError('Failed to render %s' % str(self))
+        raise ExpressionError('Failed to render %s' % str(self), tbFlag=False)
 
     def __str__(self):
         return ' '.join(str(j) for i,j in self._expr)

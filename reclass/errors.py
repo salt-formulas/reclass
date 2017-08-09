@@ -14,11 +14,14 @@ from reclass.defaults import REFERENCE_SENTINELS, EXPORT_SENTINELS
 
 class ReclassException(Exception):
 
-    def __init__(self, rc=posix.EX_SOFTWARE, msg=None):
+    def __init__(self, rc=posix.EX_SOFTWARE, msg=None, tbFlag=True):
         super(ReclassException, self).__init__()
         self._rc = rc
         self._msg = msg
-        self._previous_traceback = traceback.format_exc()
+        if tbFlag:
+            self._traceback = traceback.format_exc()
+        else:
+            self._traceback = None
         self._full_traceback = False
 
     message = property(lambda self: self._get_message())
@@ -40,8 +43,8 @@ class ReclassException(Exception):
             for l in traceback.format_tb(tb):
                 print >>out, l,
             print >>out
-        if self._previous_traceback:
-            print >>out, self._previous_traceback
+        if self._traceback:
+            print >>out, self._traceback
         print >>out, self.message
         print >>out
         sys.exit(self.rc)
@@ -100,34 +103,47 @@ class NodeNotFound(NotFoundError):
 
     def __init__(self, storage, nodename, uri):
         super(NodeNotFound, self).__init__(msg=None)
-        self._storage = storage
-        self._name = nodename
-        self._uri = uri
+        self.storage = storage
+        self.name = nodename
+        self.uri = uri
 
     def _get_message(self):
         msg = "Node '{0}' not found under {1}://{2}"
-        return msg.format(self._name, self._storage, self._uri)
+        return msg.format(self.name, self.storage, self.uri)
 
 
 class ClassNotFound(NotFoundError):
 
-    def __init__(self, storage, classname, uri, nodename=None):
+    def __init__(self, storage, classname, path, nodename='', uri=''):
         super(ClassNotFound, self).__init__(msg=None)
-        self._storage = storage
-        self._name = classname
-        self._uri = uri
-        self._nodename = nodename
+        self.storage = storage
+        self.name = classname
+        self.path = path
+        self.nodename = nodename
+        self.uri = uri
 
     def _get_message(self):
-        if self._nodename:
-            msg = "Class '{0}' (in ancestry of node '{1}') not found " \
-                  "under {2}://{3}"
-        else:
-            msg = "Class '{0}' not found under {2}://{3}"
-        return msg.format(self._name, self._nodename, self._storage, self._uri)
+        msg = '=> {0}\n'.format(self.nodename)
+        msg += '   In {0}\n'.format(self.uri)
+        msg += '   Class {0} not found under {1}://{2}'.format(self.name, self.storage, self.path)
+        return msg
 
-    def set_nodename(self, nodename):
-        self._nodename = nodename
+
+class InvQueryClassNotFound(NotFoundError):
+
+    def __init__(self, classNotFoundError, nodename=''):
+        super(InvQueryClassNotFound, self).__init__(msg=None)
+        self.nodename = nodename
+        self.classNotFoundError = classNotFoundError
+        self._traceback = self.classNotFoundError._traceback
+
+    def _get_message(self):
+        msg = '-> {0}\n'.format(self.nodename)
+        msg += '   For InvQueries:\n'
+        msg += '   -> {0}\n'.format(self.classNotFoundError.nodename)
+        msg += '      In {0}\n'.format(self.classNotFoundError.uri)
+        msg += '      Class {0} not found under {1}://{2}'.format(self.classNotFoundError.name, self.classNotFoundError.storage, self.classNotFoundError.path)
+        return msg
 
 
 class InterpolationError(ReclassException):
@@ -139,7 +155,7 @@ class InterpolationError(ReclassException):
         self.context = None
 
     def _get_message(self):
-        msg = '=> {0}\n'.format(self.nodename)
+        msg = '-> {0}\n'.format(self.nodename)
         msg += self._render_error_message(self._get_error_message(), 1)
         msg = msg[:-1]
         return msg
@@ -183,9 +199,9 @@ class InvQueryError(InterpolationError):
 
     def _get_error_message(self):
         msg1 = 'Failed inv query {0}'.format(self.query.join(EXPORT_SENTINELS)) + self._add_context_and_uri()
-        msg2 = [ '--> {0}'.format(self.resolveError.nodename) ]
-        msg2.extend(self.resolveError._get_error_message())
-        return [ msg1, msg2 ]
+        msg2 = '-> {0}'.format(self.resolveError.nodename)
+        msg3 = self.resolveError._get_error_message()
+        return [ msg1, msg2, msg3 ]
 
 
 class ParseError(InterpolationError):
@@ -228,8 +244,8 @@ class BadReferencesError(InterpolationError):
 
 class ExpressionError(InterpolationError):
 
-    def __init__(self, msg, rc=posix.EX_DATAERR):
-        super(ExpressionError, self).__init__(rc=rc, msg=None)
+    def __init__(self, msg, rc=posix.EX_DATAERR, tbFlag=True):
+        super(ExpressionError, self).__init__(rc=rc, msg=None, tbFlag=tbFlag)
         self._error_msg = msg
 
     def _get_error_message(self):
