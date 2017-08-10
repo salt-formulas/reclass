@@ -9,6 +9,7 @@
 
 from reclass.settings import Settings
 from reclass.datatypes import Entity, Classes, Parameters, Applications, Exports
+from reclass.errors import ResolveError
 import unittest
 try:
     import unittest.mock as mock
@@ -180,7 +181,7 @@ class TestEntityNoMock(unittest.TestCase):
         node3_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node3_parameters, exports=node3_exports)
         node3_entity.interpolate_exports()
         inventory['node3'] = node3_entity.exports.as_dict()
-        node3_entity.interpolate('node3', inventory)
+        node3_entity.interpolate(inventory)
         res_inv = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}, 'node3': {'a': 3, 'b': 5}}
         res_params = {'a': 3, 'c': 3, 'b': 5, 'name': 'node3', 'exp': {'node1': 1, 'node3': 3, 'node2': 3}, 'ref': {'node1': 1, 'node3': 3, 'node2': 3}}
         self.assertDictEqual(node3_parameters.as_dict(), res_params)
@@ -195,8 +196,45 @@ class TestEntityNoMock(unittest.TestCase):
         res_inv = {'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}, 'node3': {'alpha': {'a': '111', 'b': '123'}}}
         node3_entity.interpolate_exports()
         inventory['node3'] = node3_entity.exports.as_dict()
-        node3_entity.interpolate('node3', inventory)
+        node3_entity.interpolate(inventory)
         self.assertDictEqual(node3_parameters.as_dict(), res_params)
+        self.assertDictEqual(inventory, res_inv)
+
+    def test_exports_failed_render(self):
+        node1_exports = Exports({'a': '${a}'}, SETTINGS, '')
+        node1_parameters = Parameters({'name': 'node1', 'a': 1, 'exp': '$[ exports:a ]'}, SETTINGS, '')
+        node1_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node1_parameters, exports=node1_exports)
+        node2_exports = Exports({'a': '${b}'}, SETTINGS, '')
+        node2_parameters = Parameters({'name': 'node2', 'a': 2}, SETTINGS, '')
+        node2_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node2_parameters, exports=node2_exports)
+        node1_entity.initialise_interpolation()
+        node2_entity.initialise_interpolation()
+        queries = node1_entity.parameters.get_inv_queries()
+        with self.assertRaises(ResolveError):
+            for p, q in queries:
+                node1_entity.interpolate_single_export(q)
+                node2_entity.interpolate_single_export(q)
+
+    def test_exports_failed_render_ignore(self):
+        node1_exports = Exports({'a': '${a}'}, SETTINGS, '')
+        node1_parameters = Parameters({'name': 'node1', 'a': 1, 'exp': '$[ +IgnoreErrors exports:a ]'}, SETTINGS, '')
+        node1_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node1_parameters, exports=node1_exports)
+        node2_exports = Exports({'a': '${b}'}, SETTINGS, '')
+        node2_parameters = Parameters({'name': 'node1', 'a': 2}, SETTINGS, '')
+        node2_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node2_parameters, exports=node2_exports)
+        node1_entity.initialise_interpolation()
+        node2_entity.initialise_interpolation()
+        queries = node1_entity.parameters.get_inv_queries()
+        for p, q in queries:
+            node1_entity.interpolate_single_export(q)
+            node2_entity.interpolate_single_export(q)
+        res_inv = {'node1': {'a': 1}, 'node2': {}}
+        res_params = { 'a': 1, 'name': 'node1', 'exp': {'node1': 1} }
+        inventory = {}
+        inventory['node1'] = node1_entity.exports.as_dict()
+        inventory['node2'] = node2_entity.exports.as_dict()
+        node1_entity.interpolate(inventory)
+        self.assertDictEqual(node1_parameters.as_dict(), res_params)
         self.assertDictEqual(inventory, res_inv)
 
 if __name__ == '__main__':

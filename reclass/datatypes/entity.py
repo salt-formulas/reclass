@@ -84,7 +84,7 @@ class Entity(object):
     def merge_parameters(self, params):
         self._parameters.merge(params)
 
-    def interpolate(self, nodename, inventory):
+    def interpolate(self, inventory):
         self._parameters.interpolate(inventory)
         self.interpolate_exports()
 
