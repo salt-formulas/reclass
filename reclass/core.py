@@ -197,7 +197,7 @@ class Core(object):
                 inventory = self._get_inventory(ret.parameters.needs_all_envs(), ret.environment, ret.parameters.get_inv_queries())
             ret.interpolate(nodename, inventory)
             return ret
-        except (InterpolationError, InvQueryClassNotFound) as e:
+        except InterpolationError as e:
             e.nodename = nodename
             raise
 

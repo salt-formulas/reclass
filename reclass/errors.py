@@ -112,47 +112,13 @@ class NodeNotFound(NotFoundError):
         return msg.format(self.name, self.storage, self.uri)
 
 
-class ClassNotFound(NotFoundError):
-
-    def __init__(self, storage, classname, path, nodename='', uri=''):
-        super(ClassNotFound, self).__init__(msg=None)
-        self.storage = storage
-        self.name = classname
-        self.path = path
-        self.nodename = nodename
-        self.uri = uri
-
-    def _get_message(self):
-        msg = '=> {0}\n'.format(self.nodename)
-        msg += '   In {0}\n'.format(self.uri)
-        msg += '   Class {0} not found under {1}://{2}'.format(self.name, self.storage, self.path)
-        return msg
-
-
-class InvQueryClassNotFound(NotFoundError):
-
-    def __init__(self, classNotFoundError, nodename=''):
-        super(InvQueryClassNotFound, self).__init__(msg=None)
-        self.nodename = nodename
-        self.classNotFoundError = classNotFoundError
-        self._traceback = self.classNotFoundError._traceback
-
-    def _get_message(self):
-        msg = '-> {0}\n'.format(self.nodename)
-        msg += '   For InvQueries:\n'
-        msg += '   -> {0}\n'.format(self.classNotFoundError.nodename)
-        msg += '      In {0}\n'.format(self.classNotFoundError.uri)
-        msg += '      Class {0} not found under {1}://{2}'.format(self.classNotFoundError.name, self.classNotFoundError.storage, self.classNotFoundError.path)
-        return msg
-
-
 class InterpolationError(ReclassException):
 
-    def __init__(self, msg, rc=posix.EX_DATAERR, nodename=''):
-        super(InterpolationError, self).__init__(rc=rc, msg=msg)
+    def __init__(self, msg, rc=posix.EX_DATAERR, nodename='', uri=None, context=None, tbFlag=True):
+        super(InterpolationError, self).__init__(rc=rc, msg=msg, tbFlag=tbFlag)
         self.nodename = nodename
-        self.uri = None
-        self.context = None
+        self.uri = uri
+        self.context = context
 
     def _get_message(self):
         msg = '-> {0}\n'.format(self.nodename)
@@ -178,6 +144,34 @@ class InterpolationError(ReclassException):
         return msg
 
 
+class ClassNotFound(InterpolationError):
+
+    def __init__(self, storage, classname, path, nodename='', uri=None):
+        super(ClassNotFound, self).__init__(msg=None, uri=uri, nodename=nodename)
+        self.storage = storage
+        self.name = classname
+        self.path = path
+
+    def _get_error_message(self):
+        msg = [ 'In {0}'.format(self.uri),
+                'Class {0} not found under {1}://{2}'.format(self.name, self.storage, self.path) ]
+        return msg
+
+
+class InvQueryClassNotFound(InterpolationError):
+
+    def __init__(self, classNotFoundError, nodename=''):
+        super(InvQueryClassNotFound, self).__init__(msg=None, nodename=nodename)
+        self.classNotFoundError = classNotFoundError
+        self._traceback = self.classNotFoundError._traceback
+
+    def _get_error_message(self):
+        msg = [ 'Inventory Queries:',
+                '-> {0}'.format(self.classNotFoundError.nodename) ]
+        msg.append(self.classNotFoundError._get_error_message())
+        return msg
+
+
 class ResolveError(InterpolationError):
 
     def __init__(self, reference, uri=None, context=None):
@@ -191,7 +185,7 @@ class ResolveError(InterpolationError):
 
 class InvQueryError(InterpolationError):
 
-    def __init__(self, query, resolveError, uri=None, context = None):
+    def __init__(self, query, resolveError, uri=None, context=None):
         super(InvQueryError, self).__init__(msg=None)
         self.query = query
         self.resolveError = resolveError
@@ -220,26 +214,26 @@ class ParseError(InterpolationError):
 
 class InfiniteRecursionError(InterpolationError):
 
-    def __init__(self, path, ref):
-        super(InfiniteRecursionError, self).__init__(msg=None)
-        self._path = path
-        self._ref = ref.join(REFERENCE_SENTINELS)
+    def __init__(self, context, ref, uri):
+        super(InfiniteRecursionError, self).__init__(msg=None, tbFlag=False, uri=uri)
+        self.context = context
+        self.ref = ref
 
     def _get_error_message(self):
-        msg = "Infinite recursion while resolving {0} at {1}"
-        return [ msg.format(self._ref, self._path) ]
+        msg = [ 'Infinite recursion: {0}'.format(self.ref.join(REFERENCE_SENTINELS)) + self._add_context_and_uri() ]
+        return msg
 
 
 class BadReferencesError(InterpolationError):
 
-    def __init__(self, refs, path):
-        super(BadReferencesError, self).__init__(msg=None)
-        self._path = path
-        self._refs = [ r.join(REFERENCE_SENTINELS) for r in refs ]
+    def __init__(self, refs, context, uri):
+        super(BadReferencesError, self).__init__(msg=None, context=context, uri=uri, tbFlag=False)
+        self.refs = [ r.join(REFERENCE_SENTINELS) for r in refs ]
 
     def _get_error_message(self):
-        msg = 'Bad references: {0} for path: {1}'
-        return [ msg.format(", ".join(self._refs), self._path) ]
+        msg = [ 'Bad references' + self._add_context_and_uri(),
+                '   ' + ', '.join(self.refs) ]
+        return msg
 
 
 class ExpressionError(InterpolationError):

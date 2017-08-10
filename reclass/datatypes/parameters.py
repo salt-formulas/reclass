@@ -298,7 +298,7 @@ class Parameters(object):
                         # Therefore, if we encounter False instead of True,
                         # it means that we have already processed it and are now
                         # faced with a cyclical reference.
-                        raise InfiniteRecursionError(path, ref)
+                        raise InfiniteRecursionError(path, ref, value.uri())
                     else:
                         self._interpolate_inner(path_from_ref, inventory)
                 else:
@@ -318,4 +318,4 @@ class Parameters(object):
                 old = len(value.get_references())
                 value.assembleRefs(self._base)
                 if old == len(value.get_references()):
-                    raise BadReferencesError(value.get_references(), str(path))
+                    raise BadReferencesError(value.get_references(), str(path), value.uri())
