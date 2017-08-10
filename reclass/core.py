@@ -191,12 +191,12 @@ class Core(object):
 
     def _nodeinfo(self, nodename, inventory):
         try:
-            ret = self._node_entity(nodename)
-            ret.initialise_interpolation()
-            if ret.parameters.has_inv_query() and inventory is None:
-                inventory = self._get_inventory(ret.parameters.needs_all_envs(), ret.environment, ret.parameters.get_inv_queries())
-            ret.interpolate(inventory)
-            return ret
+            node = self._node_entity(nodename)
+            node.initialise_interpolation()
+            if node.parameters.has_inv_query() and inventory is None:
+                inventory = self._get_inventory(node.parameters.needs_all_envs(), node.environment, node.parameters.get_inv_queries())
+            node.interpolate(inventory)
+            return node
         except InterpolationError as e:
             e.nodename = nodename
             raise
