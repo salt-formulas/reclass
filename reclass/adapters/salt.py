@@ -107,6 +107,7 @@ def cli():
                               nodeinfo_help='output pillar data for a specific node',
                               defaults=defaults)
         class_mappings = defaults.get('class_mappings')
+        defaults.update(vars(options))
 
         if options.mode == MODE_NODEINFO:
             data = ext_pillar(options.nodename, {},
@@ -115,8 +116,10 @@ def cli():
                               nodes_uri=options.nodes_uri,
                               classes_uri=options.classes_uri,
                               class_mappings=class_mappings,
+                              # TODO: pass ignore_* as settings/defaults
                               ignore_class_notfound=options.ignore_class_notfound,
-                              ignore_class_regexp=options.ignore_class_regexp)
+                              ignore_class_regexp=options.ignore_class_regexp,
+                              **defaults)
         else:
             data = top(minion_id=None,
                        storage_type=options.storage_type,
@@ -124,8 +127,10 @@ def cli():
                        nodes_uri=options.nodes_uri,
                        classes_uri=options.classes_uri,
                        class_mappings=class_mappings,
+                              # TODO: pass ignore_* as settings/defaults
                        ignore_class_notfound=options.ignore_class_notfound,
-                       ignore_class_regexp=options.ignore_class_regexp)
+                       ignore_class_regexp=options.ignore_class_regexp,
+                       **defaults)
 
         print output(data, options.output, options.pretty_print, options.no_refs)
 

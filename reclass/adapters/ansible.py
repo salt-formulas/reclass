@@ -61,6 +61,7 @@ def cli():
 
         storage = get_storage(options.storage_type, options.nodes_uri, options.classes_uri)
         class_mappings = defaults.get('class_mappings')
+        defaults.update(vars(options))
         settings = Settings(defaults)
         reclass = Core(storage, class_mappings, settings)
 
