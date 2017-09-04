@@ -4,18 +4,18 @@ from reclass.defaults import *
 class Settings(object):
 
     def __init__(self, options={}):
-        self.allow_scalar_over_dict = options.get('allow_scalar_over_dict', ALLOW_SCALAR_OVER_DICT)
-        self.allow_scalar_over_list = options.get('allow_scalar_over_list', ALLOW_SCALAR_OVER_LIST)
-        self.allow_list_over_scalar = options.get('allow_list_over_scalar', ALLOW_LIST_OVER_SCALAR)
-        self.allow_dict_over_scalar = options.get('allow_dict_over_scalar', ALLOW_DICT_OVER_SCALAR)
+        self.allow_scalar_over_dict = options.get('allow_scalar_over_dict', OPT_ALLOW_SCALAR_OVER_DICT)
+        self.allow_scalar_over_list = options.get('allow_scalar_over_list', OPT_ALLOW_SCALAR_OVER_LIST)
+        self.allow_list_over_scalar = options.get('allow_list_over_scalar', OPT_ALLOW_LIST_OVER_SCALAR)
+        self.allow_dict_over_scalar = options.get('allow_dict_over_scalar', OPT_ALLOW_DICT_OVER_SCALAR)
         self.automatic_parameters = options.get('automatic_parameters', AUTOMATIC_RECLASS_PARAMETERS)
         self.default_environment = options.get('default_environment', DEFAULT_ENVIRONMENT)
         self.delimiter = options.get('delimiter', PARAMETER_INTERPOLATION_DELIMITER)
         self.dict_key_override_prefix = options.get('dict_key_override_prefix', PARAMETER_DICT_KEY_OVERRIDE_PREFIX)
         self.escape_character = options.get('escape_character', ESCAPE_CHARACTER)
         self.export_sentinels = options.get('export_sentinels', EXPORT_SENTINELS)
-        self.inventory_ignore_failed_node = options.get('inventory_ignore_failed_node', INVENTORY_IGNORE_FAILED_NODE)
-        self.inventory_ignore_failed_render = options.get('inventory_ignore_failed_render', INVENTORY_IGNORE_FAILED_RENDER)
+        self.inventory_ignore_failed_node = options.get('inventory_ignore_failed_node', OPT_INVENTORY_IGNORE_FAILED_NODE)
+        self.inventory_ignore_failed_render = options.get('inventory_ignore_failed_render', OPT_INVENTORY_IGNORE_FAILED_RENDER)
         self.reference_sentinels = options.get('reference_sentinels', REFERENCE_SENTINELS)
         self.ignore_class_notfound = options.get('ignore_class_notfound', OPT_IGNORE_CLASS_NOTFOUND)
 
