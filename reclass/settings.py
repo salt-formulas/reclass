@@ -17,6 +17,7 @@ class Settings(object):
         self.inventory_ignore_failed_node = options.get('inventory_ignore_failed_node', reclass.defaults.INVENTORY_IGNORE_FAILED_NODE)
         self.inventory_ignore_failed_render = options.get('inventory_ignore_failed_render', reclass.defaults.INVENTORY_IGNORE_FAILED_RENDER)
         self.reference_sentinels = options.get('reference_sentinels', reclass.defaults.REFERENCE_SENTINELS)
+        self.ignore_class_not_found = options.get('ignore_class_not_found', reclass.defaults.IGNORE_CLASS_NOT_FOUND)
 
         self.ref_parser = reclass.values.parser_funcs.get_ref_parser(self.escape_character, self.reference_sentinels, self.export_sentinels)
         self.simple_ref_parser = reclass.values.parser_funcs.get_simple_ref_parser(self.escape_character, self.reference_sentinels, self.export_sentinels)
