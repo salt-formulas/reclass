@@ -31,42 +31,44 @@ class Exports(Parameters):
         while len(self._unrendered) > 0:
             path, v = self._unrendered.iteritems().next()
             value = path.get_value(self._base)
-            if not isinstance(value, (Value, ValueList)):
-                # references to lists and dicts are only deepcopied when merged
-                # together so it's possible a value with references in a referenced
-                # list or dict has already been rendered
-                del self._unrendered[path]
-            else:
+            if isinstance(value, (Value, ValueList)):
                 external._interpolate_references(path, value, None)
                 new = self._interpolate_render_from_external(external._base, path, value)
                 path.set_value(self._base, new)
+                del self._unrendered[path]
+            else:
+                # references to lists and dicts are only deepcopied when merged
+                # together so it's possible a value with references in a referenced
+                # list or dict has already been rendered
                 del self._unrendered[path]
 
     def interpolate_single_from_external(self, external, query):
         paths = {}
         for r in query.get_inv_references():
             paths[r] = True
+
+        rendered = {}
         while len(paths) > 0:
             path, v = paths.iteritems().next()
-            if path.exists_in(self._base) and path in self._unrendered:
-                value = path.get_value(self._base)
-                if not isinstance(value, (Value, ValueList)):
-                    del paths[path]
-                    del self._unrendered[path]
-                else:
+            rendpath = path.deepest_match_in(self._base)
+            if rendpath in rendered:
+                del paths[path]
+                continue
+            if rendpath.exists_in(self._base) and rendpath in self._unrendered:
+                value = rendpath.get_value(self._base)
+                if isinstance(value, (Value, ValueList)):
                     try:
-                        external._interpolate_references(path, value, None)
-                        new = self._interpolate_render_from_external(external._base, path, value)
-                        path.set_value(self._base, new)
+                        external._interpolate_references(rendpath, value, None)
+                        new = self._interpolate_render_from_external(external._base, rendpath, value)
+                        rendpath.set_value(self._base, new)
                     except ResolveError as e:
                         if query.ignore_failed_render():
-                            path.delete(self._base)
+                            rendpath.delete(self._base)
                         else:
                             raise
-                    del paths[path]
-                    del self._unrendered[path]
-            else:
-                del paths[path]
+            rendered[rendpath] = True
+            paths.pop(rendpath, None)
+            self._unrendered.pop(rendpath, None)
 
     def _interpolate_render_from_external(self, context, path, value):
         try:

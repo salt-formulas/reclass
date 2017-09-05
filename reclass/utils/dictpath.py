@@ -117,7 +117,7 @@ class DictPath(object):
 
     def key_parts(self):
         if self.has_ancestors():
-            return self._parts[::len(self._parts)-1]
+            return self._parts[:-1]
         else:
             return []
 
@@ -133,6 +133,9 @@ class DictPath(object):
     def drop_first(self):
         del self._parts[0]
         return self
+
+    def is_empty(self):
+        return len(self._parts) == 0
 
     def delete(self, base):
         del self._get_innermost_container(base)[self._get_key()]
@@ -154,3 +157,22 @@ class DictPath(object):
                 else:
                     return False
         return True
+
+    def deepest_match_in(self, container):
+        match = DictPath(self._delim)
+        item = container
+        for i in self._parts:
+            if isinstance(item, (dict, list)):
+                if i in item:
+                    if isinstance(item, dict):
+                        item = item[i]
+                    elif isinstance(container, list):
+                        item = item[int(i)]
+                    match = match.new_subpath(i)
+                else:
+                    return match
+            else:
+                if item == self._parts[-1]:
+                    match = match.new_subpath(i)
+                return match
+        return match
