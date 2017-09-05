@@ -55,15 +55,17 @@ def ext_pillar(minion_id, pillar,
 def top(minion_id, storage_type=OPT_STORAGE_TYPE,
         inventory_base_uri=OPT_INVENTORY_BASE_URI, nodes_uri=OPT_NODES_URI,
         classes_uri=OPT_CLASSES_URI,
-        #exports_uri=OPT_EXPORTS_URI,
         class_mappings=None,
+        # TODO: pass ignore_* as settings/kwargs
         ignore_class_notfound=OPT_IGNORE_CLASS_NOTFOUND,
-        ignore_class_regexp=OPT_IGNORE_CLASS_REGEXP):
+        ignore_class_regexp=OPT_IGNORE_CLASS_REGEXP,
+        ** kwargs):
 
     path_mangler = get_path_mangler(storage_type)
     nodes_uri, classes_uri = path_mangler(inventory_base_uri, nodes_uri, classes_uri)
     storage = get_storage(storage_type, nodes_uri, classes_uri)
-    reclass = Core(storage, class_mappings, input_data=None, default_environment='base',
+    settings = Settings(kwargs)
+    reclass = Core(storage, class_mappings, settings, input_data=None,
                    ignore_class_notfound=ignore_class_notfound,
                    ignore_class_regexp=ignore_class_regexp)
 
@@ -108,6 +110,11 @@ def cli():
                               defaults=defaults)
         class_mappings = defaults.get('class_mappings')
         defaults.update(vars(options))
+        defaults.pop("storage_type", None)
+        defaults.pop("inventory_base_uri", None)
+        defaults.pop("nodes_uri", None)
+        defaults.pop("classes_uri", None)
+        defaults.pop("class_mappings", None)
 
         if options.mode == MODE_NODEINFO:
             data = ext_pillar(options.nodename, {},
