@@ -1,3 +1,4 @@
+import copy
 import reclass.values.parser_funcs
 from reclass.defaults import *
 
@@ -34,5 +35,16 @@ class Settings(object):
                and self.dict_key_override_prefix == other.dict_key_override_prefix \
                and self.escape_character == other.escape_character \
                and self.export_sentinels == other.export_sentinels \
+               and self.inventory_ignore_failed_node == other.inventory_ignore_failed_node \
+               and self.inventory_ignore_failed_render == other.inventory_ignore_failed_render \
                and self.reference_sentinels == other.reference_sentinels \
                and self.ignore_class_notfound == other.ignore_class_notfound
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
+
+    def __deepcopy__(self, memo):
+        return self.__copy__()
