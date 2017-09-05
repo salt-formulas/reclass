@@ -224,7 +224,7 @@ class ExternalNodeStorage(NodeStorageBase):
     def get_node(self, name, settings):
         file = self._nodes[name]
         blob = self._repos[self._nodes_uri.repo].get(file.id)
-        entity = YamlData.from_string(blob.data, 'git_fs://{0} {1} {2}'.format(self._nodes_uri.repo, self._nodes_uri.branch, file.path)).get_entity(name, setings)
+        entity = YamlData.from_string(blob.data, 'git_fs://{0} {1} {2}'.format(self._nodes_uri.repo, self._nodes_uri.branch, file.path)).get_entity(name, settings)
         return entity
 
     def get_class(self, name, environment, settings):
