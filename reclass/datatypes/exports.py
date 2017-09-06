@@ -71,7 +71,7 @@ class Exports(Parameters):
         paths = {}
         path = DictPath(self._settings.delimiter)
         for i in mainpath.key_parts():
-            path = path.new_subpath(i)
+            path.add_subpath(i)
             if path in self._unrendered:
                 paths[path] = True
         for i in self._unrendered:

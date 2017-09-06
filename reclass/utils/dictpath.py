@@ -140,6 +140,9 @@ class DictPath(object):
     def delete(self, base):
         del self._get_innermost_container(base)[self._get_key()]
 
+    def add_subpath(self, key):
+        self._parts.append(key)
+
     def is_ancestor_of(self, other):
         if len(other._parts) <= len(self._parts):
             return False
