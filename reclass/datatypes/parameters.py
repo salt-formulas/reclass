@@ -99,7 +99,6 @@ class Parameters(object):
 
     def _wrap_list(self, source, path):
         return [ self._wrap_value(v, path.new_subpath(k)) for (k, v) in enumerate(source) ]
-        #self._wrap_value(v, path.new_subpath()) for v in source ]
 
     def _wrap_dict(self, source, path):
         return { k: self._wrap_value(v, path.new_subpath(k)) for k, v in source.iteritems() }
