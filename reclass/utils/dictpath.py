@@ -165,22 +165,3 @@ class DictPath(object):
                 else:
                     return False
         return True
-
-#    def deepest_match_in(self, container):
-#        match = DictPath(self._delim)
-#        item = container
-#        for i in self._parts:
-#            if isinstance(item, (dict, list)):
-#                if i in item:
-#                    if isinstance(item, dict):
-#                        item = item[i]
-#                    elif isinstance(container, list):
-#                        item = item[int(i)]
-#                    match = match.new_subpath(i)
-#                else:
-#                    return match
-#            else:
-#                if item == self._parts[-1]:
-#                    match = match.new_subpath(i)
-#                return match
-#        return match
