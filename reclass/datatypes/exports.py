@@ -10,6 +10,7 @@ from parameters import Parameters
 from reclass.errors import ResolveError
 from reclass.values.value import Value
 from reclass.values.valuelist import ValueList
+from reclass.utils.dictpath import DictPath
 
 class Exports(Parameters):
 
@@ -43,32 +44,40 @@ class Exports(Parameters):
                 del self._unrendered[path]
 
     def interpolate_single_from_external(self, external, query):
-        paths = {}
         for r in query.get_inv_references():
-            paths[r] = True
+            self._interpolate_single_path_from_external(r, external, query)
 
-        rendered = {}
-        while len(paths) > 0:
-            path, v = paths.iteritems().next()
-            rendpath = path.deepest_match_in(self._base)
-            if rendpath in rendered:
-                del paths[path]
-                continue
-            if rendpath.exists_in(self._base) and rendpath in self._unrendered:
-                value = rendpath.get_value(self._base)
+    def _interpolate_single_path_from_external(self, mainpath, external, query):
+        required = self._get_required_paths(mainpath)
+        while len(required) > 0:
+            while len(required) > 0:
+                path, v = required.iteritems().next()
+                value = path.get_value(self._base)
                 if isinstance(value, (Value, ValueList)):
                     try:
-                        external._interpolate_references(rendpath, value, None)
-                        new = self._interpolate_render_from_external(external._base, rendpath, value)
-                        rendpath.set_value(self._base, new)
+                        external._interpolate_references(path, value, None)
+                        new = self._interpolate_render_from_external(external._base, path, value)
+                        path.set_value(self._base, new)
                     except ResolveError as e:
                         if query.ignore_failed_render():
-                            rendpath.delete(self._base)
+                            path.delete(self._base)
                         else:
                             raise
-            rendered[rendpath] = True
-            paths.pop(rendpath, None)
-            self._unrendered.pop(rendpath, None)
+                del required[path]
+                del self._unrendered[path]
+            required = self._get_required_paths(mainpath)
+
+    def _get_required_paths(self, mainpath):
+        paths = {}
+        path = DictPath(self._settings.delimiter)
+        for i in mainpath.key_parts():
+            path.new_subpath(i)
+            if path in self._unrendered:
+                paths[path] = True
+        for i in self._unrendered:
+            if mainpath.is_ancestor_of(i) or mainpath == i:
+                paths[i] = True
+        return paths
 
     def _interpolate_render_from_external(self, context, path, value):
         try:

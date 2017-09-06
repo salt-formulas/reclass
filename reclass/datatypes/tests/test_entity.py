@@ -187,6 +187,28 @@ class TestEntityNoMock(unittest.TestCase):
         self.assertDictEqual(node3_parameters.as_dict(), res_params)
         self.assertDictEqual(inventory, res_inv)
 
+    def test_exports_multiple_nodes(self):
+        node1_exports = Exports({'a': '${a}'}, SETTINGS, '')
+        node1_parameters = Parameters({'name': 'node1', 'a': { 'test': '${b}' }, 'b': 1, 'exp': '$[ exports:a ]'}, SETTINGS, '')
+        node1_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node1_parameters, exports=node1_exports)
+        node2_exports = Exports({'a': '${a}'}, SETTINGS, '')
+        node2_parameters = Parameters({'name': 'node2', 'a': { 'test': '${b}' }, 'b': 2 }, SETTINGS, '')
+        node2_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node2_parameters, exports=node2_exports)
+        node1_entity.initialise_interpolation()
+        node2_entity.initialise_interpolation()
+        queries = node1_entity.parameters.get_inv_queries()
+        for p, q in queries:
+            node1_entity.interpolate_single_export(q)
+            node2_entity.interpolate_single_export(q)
+        res_inv = {'node1': {'a': {'test': 1}}, 'node2': {'a': {'test': 2}}}
+        res_params = {'a': {'test': 1}, 'b': 1, 'name': 'node1', 'exp': {'node1': {'test': 1}, 'node2': {'test': 2}}}
+        inventory = {}
+        inventory['node1'] = node1_entity.exports.as_dict()
+        inventory['node2'] = node2_entity.exports.as_dict()
+        node1_entity.interpolate(inventory)
+        self.assertDictEqual(node1_parameters.as_dict(), res_params)
+        self.assertDictEqual(inventory, res_inv)
+
     def test_exports_with_nested_references(self):
         inventory = {'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}}
         node3_exports = Exports({'alpha': '${alpha}'}, SETTINGS, '')

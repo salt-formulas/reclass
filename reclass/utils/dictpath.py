@@ -140,6 +140,14 @@ class DictPath(object):
     def delete(self, base):
         del self._get_innermost_container(base)[self._get_key()]
 
+    def is_ancestor_of(self, other):
+        if len(other._parts) <= len(self._parts):
+            return False
+        for i in range(len(self._parts)):
+            if other._parts[i] != self._parts[i]:
+                return False
+        return True
+
     def exists_in(self, container):
         item = container
         for i in self._parts:
@@ -158,21 +166,21 @@ class DictPath(object):
                     return False
         return True
 
-    def deepest_match_in(self, container):
-        match = DictPath(self._delim)
-        item = container
-        for i in self._parts:
-            if isinstance(item, (dict, list)):
-                if i in item:
-                    if isinstance(item, dict):
-                        item = item[i]
-                    elif isinstance(container, list):
-                        item = item[int(i)]
-                    match = match.new_subpath(i)
-                else:
-                    return match
-            else:
-                if item == self._parts[-1]:
-                    match = match.new_subpath(i)
-                return match
-        return match
+#    def deepest_match_in(self, container):
+#        match = DictPath(self._delim)
+#        item = container
+#        for i in self._parts:
+#            if isinstance(item, (dict, list)):
+#                if i in item:
+#                    if isinstance(item, dict):
+#                        item = item[i]
+#                    elif isinstance(container, list):
+#                        item = item[int(i)]
+#                    match = match.new_subpath(i)
+#                else:
+#                    return match
+#            else:
+#                if item == self._parts[-1]:
+#                    match = match.new_subpath(i)
+#                return match
+#        return match
