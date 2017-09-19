@@ -8,8 +8,11 @@
 #
 import os, sys
 import fnmatch
+import yaml
+from reclass.output.yaml_outputter import ExplicitDumper
 from reclass.storage import NodeStorageBase
-from yamlfile import YamlFile
+from reclass.storage.common import NameMangler
+from reclass.storage.yamldata import YamlData
 from directory import Directory
 from reclass.datatypes import Entity
 import reclass.errors
@@ -21,34 +24,42 @@ def vvv(msg):
     #print >>sys.stderr, msg
     pass
 
+def path_mangler(inventory_base_uri, nodes_uri, classes_uri):
+
+    if inventory_base_uri is None:
+        # if inventory_base is not given, default to current directory
+        inventory_base_uri = os.getcwd()
+
+    nodes_uri = nodes_uri or 'nodes'
+    classes_uri = classes_uri or 'classes'
+
+    def _path_mangler_inner(path):
+        ret = os.path.join(inventory_base_uri, path)
+        ret = os.path.expanduser(ret)
+        return os.path.abspath(ret)
+
+    n, c = map(_path_mangler_inner, (nodes_uri, classes_uri))
+    if n == c:
+        raise errors.DuplicateUriError(n, c)
+    common = os.path.commonprefix((n, c))
+    if common == n or common == c:
+        raise errors.UriOverlapError(n, c)
+
+    return n, c
+
+
 class ExternalNodeStorage(NodeStorageBase):
 
-    def __init__(self, nodes_uri, classes_uri, default_environment=None):
+    def __init__(self, nodes_uri, classes_uri):
         super(ExternalNodeStorage, self).__init__(STORAGE_NAME)
 
-        def name_mangler(relpath, name):
-            # nodes are identified just by their basename, so
-            # no mangling required
-            return relpath, name
-        self._nodes_uri = nodes_uri
-        self._nodes = self._enumerate_inventory(nodes_uri, name_mangler)
+        if nodes_uri is not None:
+            self._nodes_uri = nodes_uri
+            self._nodes = self._enumerate_inventory(nodes_uri, NameMangler.nodes)
 
-        def name_mangler(relpath, name):
-            if relpath == '.':
-                # './' is converted to None
-                return None, name
-            parts = relpath.split(os.path.sep)
-            if name != 'init':
-                # "init" is the directory index, so only append the basename
-                # to the path parts for all other filenames. This has the
-                # effect that data in file "foo/init.yml" will be registered
-                # as data for class "foo", not "foo.init"
-                parts.append(name)
-            return relpath, '.'.join(parts)
-        self._classes_uri = classes_uri
-        self._classes = self._enumerate_inventory(classes_uri, name_mangler)
-
-        self._default_environment = default_environment
+        if classes_uri is not None:
+            self._classes_uri = classes_uri
+            self._classes = self._enumerate_inventory(classes_uri, NameMangler.classes)
 
     nodes_uri = property(lambda self: self._nodes_uri)
     classes_uri = property(lambda self: self._classes_uri)
@@ -76,7 +87,7 @@ class ExternalNodeStorage(NodeStorageBase):
         d.walk(register_fn)
         return ret
 
-    def get_node(self, name):
+    def get_node(self, name, settings):
         vvv('GET NODE {0}'.format(name))
         try:
             relpath = self._nodes[name]
@@ -84,16 +95,16 @@ class ExternalNodeStorage(NodeStorageBase):
             name = os.path.splitext(relpath)[0]
         except KeyError, e:
             raise reclass.errors.NodeNotFound(self.name, name, self.nodes_uri)
-        entity = YamlFile(path).get_entity(name, self._default_environment)
+        entity = YamlData.from_file(path).get_entity(name, settings)
         return entity
 
-    def get_class(self, name, nodename=None):
+    def get_class(self, name, environment, settings):
         vvv('GET CLASS {0}'.format(name))
         try:
             path = os.path.join(self.classes_uri, self._classes[name])
         except KeyError, e:
             raise reclass.errors.ClassNotFound(self.name, name, self.classes_uri)
-        entity = YamlFile(path).get_entity(name)
+        entity = YamlData.from_file(path).get_entity(name, settings)
         return entity
 
     def enumerate_nodes(self):
