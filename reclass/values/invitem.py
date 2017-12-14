@@ -312,7 +312,7 @@ class InvItem(Item):
 
         results = {}
         for node, items in inventory.iteritems():
-            if self._question.value(context, items) and self._value_path.exists_in(items):
+            if self._question.value(context, items):
                 results[node] = copy.deepcopy(self._resolve(self._value_path, items))
         return results
 
