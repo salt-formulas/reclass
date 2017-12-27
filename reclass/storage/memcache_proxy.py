@@ -35,7 +35,7 @@ class MemcacheProxy(NodeStorageBase):
         try:
             ret = cache[name]
 
-        except KeyError, e:
+        except KeyError as e:
             ret = getter(name)
             cache[name] = ret
 

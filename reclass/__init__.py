@@ -7,9 +7,10 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 
-from output import OutputLoader
-from storage.loader import StorageBackendLoader
-from storage.memcache_proxy import MemcacheProxy
+from reclass.output import OutputLoader
+from reclass.storage.loader import StorageBackendLoader
+from reclass.storage.memcache_proxy import MemcacheProxy
+
 
 def get_storage(storage_type, nodes_uri, classes_uri, **kwargs):
     storage_class = StorageBackendLoader(storage_type).load()
