@@ -16,6 +16,11 @@ import shlex
 from reclass.datatypes import Entity, Classes, Parameters
 from reclass.errors import MappingFormatError, ClassNotFound
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 class Core(object):
 
     def __init__(self, storage, class_mappings, input_data=None,
@@ -54,7 +59,7 @@ class Core(object):
             regexp = True
         try:
             key = lexer.get_token()
-        except ValueError, e:
+        except ValueError as e:
             raise MappingFormatError('Error in mapping "{0}": missing closing '
                                      'quote (or slash)'.format(instr))
         if regexp:
@@ -100,7 +105,7 @@ class Core(object):
             if klass not in seen:
                 try:
                     class_entity = self._storage.get_class(klass)
-                except ClassNotFound, e:
+                except ClassNotFound as e:
                     if self._ignore_class_notfound:
                         if not cnf_r:
                             cnf_r = re.compile('|'.join(self._ignore_class_regexp))
@@ -158,7 +163,7 @@ class Core(object):
         nodes = {}
         applications = {}
         classes = {}
-        for f, nodeinfo in entities.iteritems():
+        for f, nodeinfo in entities.items():
             d = nodes[f] = self._nodeinfo_as_dict(f, nodeinfo)
             for a in d['applications']:
                 if a in applications:

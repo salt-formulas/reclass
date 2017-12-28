@@ -7,7 +7,7 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 
-from classes import Classes
+from .classes import Classes
 
 class Applications(Classes):
     '''

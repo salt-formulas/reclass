@@ -75,7 +75,7 @@ def cli():
             apps = data['applications']
             if options.applications_postfix:
                 postfix = options.applications_postfix
-                groups.update([(k + postfix, v) for k,v in apps.iteritems()])
+                groups.update([(k + postfix, v) for k,v in apps.items()])
             else:
                 groups.update(apps)
 

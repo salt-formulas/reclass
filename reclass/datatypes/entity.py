@@ -6,9 +6,9 @@
 # Copyright © 2007–14 martin f. krafft <madduck@madduck.net>
 # Released under the terms of the Artistic Licence 2.0
 #
-from classes import Classes
-from applications import Applications
-from parameters import Parameters
+from .classes import Classes
+from .applications import Applications
+from .parameters import Parameters
 
 class Entity(object):
     '''

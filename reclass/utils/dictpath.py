@@ -7,7 +7,8 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 
-import types, re
+import six
+import re
 
 class DictPath(object):
     '''
@@ -59,7 +60,7 @@ class DictPath(object):
         if contents is None:
             self._parts = []
         else:
-            if isinstance(contents, types.StringTypes):
+            if isinstance(contents, six.string_types):
                 self._parts = self._split_string(contents)
             elif isinstance(contents, tuple):
                 self._parts = list(contents)
@@ -76,7 +77,7 @@ class DictPath(object):
         return self._delim.join(str(i) for i in self._parts)
 
     def __eq__(self, other):
-        if isinstance(other, types.StringTypes):
+        if isinstance(other, six.string_types):
             other = DictPath(self._delim, other)
 
         return self._parts == other._parts \

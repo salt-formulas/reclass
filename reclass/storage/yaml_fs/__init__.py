@@ -9,8 +9,8 @@
 import os, sys
 import fnmatch
 from reclass.storage import NodeStorageBase
-from yamlfile import YamlFile
-from directory import Directory
+from .yamlfile import YamlFile
+from .directory import Directory
 from reclass.datatypes import Entity
 import reclass.errors
 
@@ -82,7 +82,7 @@ class ExternalNodeStorage(NodeStorageBase):
             relpath = self._nodes[name]
             path = os.path.join(self.nodes_uri, relpath)
             name = os.path.splitext(relpath)[0]
-        except KeyError, e:
+        except KeyError as e:
             raise reclass.errors.NodeNotFound(self.name, name, self.nodes_uri)
         entity = YamlFile(path).get_entity(name, self._default_environment)
         return entity
@@ -91,7 +91,7 @@ class ExternalNodeStorage(NodeStorageBase):
         vvv('GET CLASS {0}'.format(name))
         try:
             path = os.path.join(self.classes_uri, self._classes[name])
-        except KeyError, e:
+        except KeyError as e:
             raise reclass.errors.ClassNotFound(self.name, name, self.classes_uri)
         entity = YamlFile(path).get_entity(name)
         return entity

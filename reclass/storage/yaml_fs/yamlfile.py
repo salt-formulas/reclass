@@ -11,6 +11,7 @@ import yaml
 import os
 from reclass.errors import NotFoundError
 
+
 class YamlFile(object):
 
     def __init__(self, path):
@@ -25,7 +26,7 @@ class YamlFile(object):
     path = property(lambda self: self._path)
 
     def _read(self):
-        fp = file(self._path)
+        fp = open(self._path)
         data = yaml.safe_load(fp)
         if data is not None:
             self._data = data

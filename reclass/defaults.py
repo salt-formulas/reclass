@@ -7,7 +7,7 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 import os, sys
-from version import RECLASS_NAME
+from .version import RECLASS_NAME
 
 # defaults for the command-line options
 OPT_STORAGE_TYPE = 'yaml_fs'

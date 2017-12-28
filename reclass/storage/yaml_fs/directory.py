@@ -7,15 +7,15 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 import os
-import sys
 from reclass.errors import NotFoundError
 
-SKIPDIRS = ( 'CVS', 'SCCS' )
+SKIPDIRS = ('CVS', 'SCCS')
 FILE_EXTENSION = '.yml'
 
 def vvv(msg):
     #print >>sys.stderr, msg
     pass
+
 
 class Directory(object):
 
@@ -39,7 +39,8 @@ class Directory(object):
     files = property(lambda self: self._files)
 
     def walk(self, register_fn=None):
-        if not callable(register_fn): register_fn = self._register_files
+        if not callable(register_fn):
+            register_fn = self._register_files
 
         def _error(exc):
             raise(exc)

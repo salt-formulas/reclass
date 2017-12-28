@@ -6,12 +6,14 @@
 # Copyright © 2007–14 martin f. krafft <madduck@madduck.net>
 # Released under the terms of the Artistic Licence 2.0
 #
-import types
+import six
+from six.moves import xrange
 from reclass.defaults import PARAMETER_INTERPOLATION_DELIMITER,\
                              PARAMETER_DICT_KEY_OVERRIDE_PREFIX
 from reclass.utils.dictpath import DictPath
 from reclass.utils.refvalue import RefValue
 from reclass.errors import InfiniteRecursionError, UndefinedVariableError
+
 
 class Parameters(object):
     '''
@@ -78,7 +80,7 @@ class Parameters(object):
             # will be added again further on
             del self._occurrences[path]
 
-        if self.delimiter is None or not isinstance(new, (types.StringTypes,
+        if self.delimiter is None or not isinstance(new, (six.string_types,
                                                           RefValue)):
             # either there is no delimiter defined (and hence no references
             # are being used), or the new value is not a string (and hence
@@ -155,7 +157,7 @@ class Parameters(object):
 
         ovrprfx = Parameters.DICT_KEY_OVERRIDE_PREFIX
 
-        for key, newvalue in new.iteritems():
+        for key, newvalue in new.items():
             if key.startswith(ovrprfx) and not initmerge:
                 ret[key.lstrip(ovrprfx)] = newvalue
             else:
@@ -232,7 +234,7 @@ class Parameters(object):
             # we could use a view here, but this is simple enough:
             # _interpolate_inner removes references from the refs hash after
             # processing them, so we cannot just iterate the dict
-            path, refvalue = self._occurrences.iteritems().next()
+            path, refvalue = next(iter(self._occurrences.items()))
             self._interpolate_inner(path, refvalue)
 
     def _interpolate_inner(self, path, refvalue):

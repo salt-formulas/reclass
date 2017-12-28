@@ -121,7 +121,7 @@ class TestParameters(unittest.TestCase):
         mergee = {'five':5,'four':4,'None':None,'tuple':(1,2,3)}
         p2, b2 = self._construct_mocked_params(mergee)
         p1.merge(p2)
-        for key, value in mergee.iteritems():
+        for key, value in mergee.items():
             # check that each key, value in mergee resulted in a get call and
             # a __setitem__ call against b1 (the merge target)
             self.assertIn(mock.call(key), b1.get.call_args_list)
