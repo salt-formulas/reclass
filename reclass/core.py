@@ -187,7 +187,13 @@ class Core(object):
             node.initialise_interpolation()
             if node.parameters.has_inv_query() and inventory is None:
                 inventory = self._get_inventory(node.parameters.needs_all_envs(), node.environment, node.parameters.get_inv_queries())
+
+            return_missing_reference = self._settings.return_missing_reference
+            self._settings.return_missing_reference = True
             node.interpolate(inventory)
+            self._settings.return_missing_reference = return_missing_reference
+            if not return_missing_reference:
+                node.check_failed_interpolation()
             return node
         except InterpolationError as e:
             e.nodename = nodename

@@ -10,6 +10,8 @@ from classes import Classes
 from applications import Applications
 from exports import Exports
 from parameters import Parameters
+from reclass.errors import ResolveError, InterpolationError, ResolveErrorList
+from reclass.defaults import REFERENCE_SENTINELS, EXPORT_SENTINELS
 
 class Entity(object):
     '''
@@ -98,6 +100,14 @@ class Entity(object):
 
     def interpolate_single_export(self, references):
         self._exports.interpolate_single_from_external(self._parameters, references)
+
+    def check_failed_interpolation(self):
+        p = [ ResolveError(value[len(REFERENCE_SENTINELS[0]):-len(REFERENCE_SENTINELS[1])], uri=path) for path,value in self._parameters.check_failed_interpolation() ]
+        if len(p) > 0:
+            raise ResolveErrorList(p)
+        e = [ ResolveError(value[len(REFERENCE_SENTINELS[0]):-len(REFERENCE_SENTINELS[1])], uri=path) for path,value in self._exports.check_failed_interpolation() ]
+        if len(e) > 0:
+            raise ResolveErrorList(e)
 
     def __eq__(self, other):
         return isinstance(other, type(self)) \
