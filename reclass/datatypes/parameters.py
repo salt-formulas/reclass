@@ -10,11 +10,13 @@
 import copy
 import sys
 import types
+import re
 from collections import namedtuple
 from reclass.utils.dictpath import DictPath
 from reclass.values.value import Value
 from reclass.values.valuelist import ValueList
 from reclass.errors import InfiniteRecursionError, ResolveError, InterpolationError, ParseError, BadReferencesError
+from reclass.defaults import REFERENCE_SENTINELS, EXPORT_SENTINELS, REFERENCE_PATTERN
 
 class Parameters(object):
     '''
@@ -47,6 +49,8 @@ class Parameters(object):
         self._unrendered = None
         self._escapes_handled = {}
         self._inv_queries = []
+        self._ref_missed = []
+        self._ref_pattern = '.*'+ re.escape(REFERENCE_SENTINELS[0]) + REFERENCE_PATTERN + re.escape(REFERENCE_SENTINELS[1])
         self._needs_all_envs = False
         self._keep_overrides = False
         if mapping is not None:
@@ -282,6 +286,8 @@ class Parameters(object):
             self._render_simple_dict(new, path)
         elif isinstance(new, list):
             self._render_simple_list(new, path)
+        if re.match(self._ref_pattern, str(new)):
+           self._ref_missed.append(path)
         return new
 
     def _interpolate_references(self, path, value, inventory):
@@ -318,3 +324,12 @@ class Parameters(object):
                 value.assembleRefs(self._base)
                 if old == len(value.get_references()):
                     raise BadReferencesError(value.get_references(), str(path), value.uri())
+
+    def check_failed_interpolation(self):
+        missing = []
+        for p in self._ref_missed:
+            v = str(p.get_value(self._base))
+            if re.match(self._ref_pattern, v):
+               missing.append((str(p), v))
+        return missing
+

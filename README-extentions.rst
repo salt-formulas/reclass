@@ -123,6 +123,43 @@ The ``${beta:${alpha:two}}`` construct first resolves the ``${alpha:two}`` refer
 the reference ``${beta:a}`` to the value 99.
 
 
+Return missing references
+-------------------------
+
+Similarly as new "saltclass" it may return missed references instead of throw InterpolationError.
+
+This is supposed to be feature, as
+- you can interpolate them in another ext_pillar engine.
+- your pillars will not fail.
+
+Be aware that if this option is enabled, it may resolve in rendering an "reference string" as value in the system critical
+files without notice.
+
+Default value is False to keep backward compatible behavior.
+
+.. code-block:: yaml
+
+  return_missing_reference: False
+
+
+Print summary of missed references
+----------------------------------
+
+Instead of fail on first interpolation error it will print all missed references at once.
+Also will print warnings if reference is used before it is defined in class hierarchy.
+
+.. code-block:: yaml
+  reclass --nodeinfo mynode
+  [WARNING] Reference '_param:kkk' undefined. Possibly used too early and defined later in class hierarchy.
+  [WARNING] Reference '_param:yyy' undefined. Possibly used too early and defined later in class hierarchy.
+  [WARNING] Reference '_param:kkk' undefined. Possibly used too early and defined later in class hierarchy.
+  [WARNING] Reference '_param:kkk' undefined. Possibly used too early and defined later in class hierarchy.
+  None
+
+  -> dontpanic
+     Cannot resolve ${_param:kkk}, in mykey1:path:to:fail
+     Cannot resolve ${_param:kkk}, in mykey2:another:path:to:fail
+
 
 Inventory Queries
 -----------------

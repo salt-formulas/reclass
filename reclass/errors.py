@@ -178,9 +178,27 @@ class ResolveError(InterpolationError):
         super(ResolveError, self).__init__(msg=None)
         self.reference = reference
 
+        if uri:
+            self.uri = uri
+
+        if context:
+            self.context = context
+
     def _get_error_message(self):
         msg = 'Cannot resolve {0}'.format(self.reference.join(REFERENCE_SENTINELS)) + self._add_context_and_uri()
         return [ msg ]
+
+class ResolveErrorList(InterpolationError):
+
+    def __init__(self, resolve_errors=[]):
+        super(ResolveErrorList, self).__init__(msg=None)
+        self.resolve_errors = resolve_errors
+
+    def _get_error_message(self):
+        msgs = []
+        for e in self.resolve_errors:
+            msgs.append('Cannot resolve {0}'.format(e.reference.join(REFERENCE_SENTINELS)) + e._add_context_and_uri())
+        return msgs
 
 
 class InvQueryError(InterpolationError):

@@ -8,6 +8,8 @@ from item import Item
 from reclass.settings import Settings
 from reclass.utils.dictpath import DictPath
 from reclass.errors import ResolveError
+from reclass.defaults import REFERENCE_SENTINELS, EXPORT_SENTINELS
+import sys
 
 class RefItem(Item):
 
@@ -52,7 +54,11 @@ class RefItem(Item):
         try:
             return path.get_value(context)
         except (KeyError, TypeError) as e:
-            raise ResolveError(ref)
+            print >>sys.stderr, "[WARNING] Reference '%s' undefined. Possibly used too early and defined later in class hierarchy." % (ref)
+            if self._settings.return_missing_reference:
+                return "%s" % ref.join(REFERENCE_SENTINELS)
+            else:
+                raise ResolveError(ref)
 
     def render(self, context, inventory):
         if len(self._items) == 1:

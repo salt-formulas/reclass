@@ -26,6 +26,10 @@ class Settings(object):
 
         self.ignore_class_notfound_warning = options.get('ignore_class_notfound_warning', OPT_IGNORE_CLASS_NOTFOUND_WARNING)
 
+        # passing missing reference is a feature (for example in saltclass),
+        # allow additional processing on next ext_pillar.
+        self.return_missing_reference = options.get('return_missing_reference', OPT_RETURN_MISSING_REFERENCE)
+
 
         self.ref_parser = reclass.values.parser_funcs.get_ref_parser(self.escape_character, self.reference_sentinels, self.export_sentinels)
         self.simple_ref_parser = reclass.values.parser_funcs.get_simple_ref_parser(self.escape_character, self.reference_sentinels, self.export_sentinels)
