@@ -7,14 +7,21 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 
+import copy
 import time
-#import types
 import re
-import sys
 import fnmatch
 import shlex
-from reclass.datatypes import Entity, Classes, Parameters
-from reclass.errors import MappingFormatError, ClassNotFound
+import string
+import sys
+import yaml
+
+from six import iteritems
+
+from reclass.settings import Settings
+from reclass.output.yaml_outputter import ExplicitDumper
+from reclass.datatypes import Entity, Classes, Parameters, Exports
+from reclass.errors import MappingFormatError, ClassNotFound, InvQueryClassNotFound, InvQueryError, InterpolationError
 
 try:
     basestring
@@ -23,17 +30,13 @@ except NameError:
 
 class Core(object):
 
-    def __init__(self, storage, class_mappings, input_data=None,
-            ignore_class_notfound=False, ignore_class_regexp=['.*']):
+    def __init__(self, storage, class_mappings, settings, input_data=None):
         self._storage = storage
         self._class_mappings = class_mappings
-        self._ignore_class_notfound = ignore_class_notfound
+        self._settings = settings
         self._input_data = input_data
-
-        if isinstance(ignore_class_regexp, basestring):
-            self._ignore_class_regexp = [ignore_class_regexp]
-        else:
-            self._ignore_class_regexp = ignore_class_regexp
+        if self._settings.ignore_class_notfound:
+            self._cnf_r = re.compile('|'.join([x for x in self._settings.ignore_class_notfound_regexp]))
 
     @staticmethod
     def _get_timestamp():
@@ -68,7 +71,7 @@ class Core(object):
 
     def _get_class_mappings_entity(self, nodename):
         if not self._class_mappings:
-            return Entity(name='empty (class mappings)')
+            return Entity(self._settings, name='empty (class mappings)')
         c = Classes()
         for mapping in self._class_mappings:
             matched = False
@@ -84,40 +87,42 @@ class Core(object):
                     for klass in klasses:
                         c.append_if_new(klass)
 
-        return Entity(classes=c,
+        return Entity(self._settings, classes=c,
                       name='class mappings for node {0}'.format(nodename))
 
     def _get_input_data_entity(self):
         if not self._input_data:
-            return Entity(name='empty (input data)')
-        p = Parameters(self._input_data)
-        return Entity(parameters=p, name='input data')
+            return Entity(self._settings, name='empty (input data)')
+        p = Parameters(self._input_data, self._settings)
+        return Entity(self._settings, parameters=p, name='input data')
 
-    def _recurse_entity(self, entity, merge_base=None, seen=None, nodename=None):
+    def _recurse_entity(self, entity, merge_base=None, seen=None, nodename=None, environment=None):
         if seen is None:
             seen = {}
 
-        if merge_base is None:
-            merge_base = Entity(name='empty (@{0})'.format(nodename))
+        if environment is None:
+            environment = self._settings.default_environment
 
-        cnf_r = None # class_notfound_regexp compiled
+        if merge_base is None:
+            merge_base = Entity(self._settings, name='empty (@{0})'.format(nodename))
+
         for klass in entity.classes.as_list():
             if klass not in seen:
                 try:
-                    class_entity = self._storage.get_class(klass)
+                    class_entity = self._storage.get_class(klass, environment, self._settings)
                 except ClassNotFound as e:
-                    if self._ignore_class_notfound:
-                        if not cnf_r:
-                            cnf_r = re.compile('|'.join(self._ignore_class_regexp))
-                        if cnf_r.match(klass):
-                            # TODO, add logging handler
-                            print >>sys.stderr, "[WARNING] Reclass class not found: '%s'. Skipped!" % klass
+                    if self._settings.ignore_class_notfound:
+                        if self._cnf_r.match(klass):
+                            if self._settings.ignore_class_notfound_warning:
+                                # TODO, add logging handler
+                                print >>sys.stderr, "[WARNING] Reclass class not found: '%s'. Skipped!" % klass
                             continue
-                    e.set_nodename(nodename)
-                    raise e
+                    e.nodename = nodename
+                    e.uri = entity.uri
+                    raise
 
                 descent = self._recurse_entity(class_entity, seen=seen,
-                                               nodename=nodename)
+                                               nodename=nodename, environment=environment)
                 # on every iteration, we merge the result of the recursive
                 # descent into what we have so far…
                 merge_base.merge(descent)
@@ -129,18 +134,72 @@ class Core(object):
         merge_base.merge(entity)
         return merge_base
 
-    def _nodeinfo(self, nodename):
-        node_entity = self._storage.get_node(nodename)
-        base_entity = Entity(name='base')
+    def _get_automatic_parameters(self, nodename, environment):
+        if self._settings.automatic_parameters:
+            return Parameters({ '_reclass_': { 'name': { 'full': nodename, 'short': str.split(nodename, '.')[0] },
+                                               'environment': environment } }, self._settings, '__auto__')
+        else:
+            return Parameters({}, self._settings, '')
+
+    def _get_inventory(self, all_envs, environment, queries):
+        inventory = {}
+        for nodename in self._storage.enumerate_nodes():
+            try:
+                node_base = self._storage.get_node(nodename, self._settings)
+                if node_base.environment == None:
+                    node_base.environment = self._settings.default_environment
+            except yaml.scanner.ScannerError as e:
+                if self._settings.inventory_ignore_failed_node:
+                    continue
+                else:
+                    raise
+
+            if all_envs or node_base.environment == environment:
+                try:
+                    node = self._node_entity(nodename)
+                except ClassNotFound as e:
+                    raise InvQueryClassNotFound(e)
+                if queries is None:
+                    try:
+                        node.interpolate_exports()
+                    except InterpolationError as e:
+                        e.nodename = nodename
+                else:
+                    node.initialise_interpolation()
+                    for p, q in queries:
+                        try:
+                            node.interpolate_single_export(q)
+                        except InterpolationError as e:
+                            e.nodename = nodename
+                            raise InvQueryError(q.contents(), e, context=p, uri=q.uri())
+                inventory[nodename] = node.exports.as_dict()
+        return inventory
+
+    def _node_entity(self, nodename):
+        node_entity = self._storage.get_node(nodename, self._settings)
+        if node_entity.environment == None:
+            node_entity.environment = self._settings.default_environment
+        base_entity = Entity(self._settings, name='base')
         base_entity.merge(self._get_class_mappings_entity(node_entity.name))
         base_entity.merge(self._get_input_data_entity())
+        base_entity.merge_parameters(self._get_automatic_parameters(nodename, node_entity.environment))
         seen = {}
-        merge_base = self._recurse_entity(base_entity, seen=seen,
-                                          nodename=base_entity.name)
-        ret = self._recurse_entity(node_entity, merge_base, seen=seen,
-                                   nodename=node_entity.name)
-        ret.interpolate()
-        return ret
+        merge_base = self._recurse_entity(base_entity, seen=seen, nodename=nodename,
+                                          environment=node_entity.environment)
+        return self._recurse_entity(node_entity, merge_base, seen=seen, nodename=nodename,
+                                    environment=node_entity.environment)
+
+    def _nodeinfo(self, nodename, inventory):
+        try:
+            node = self._node_entity(nodename)
+            node.initialise_interpolation()
+            if node.parameters.has_inv_query() and inventory is None:
+                inventory = self._get_inventory(node.parameters.needs_all_envs(), node.environment, node.parameters.get_inv_queries())
+            node.interpolate(inventory)
+            return node
+        except InterpolationError as e:
+            e.nodename = nodename
+            raise
 
     def _nodeinfo_as_dict(self, nodename, entity):
         ret = {'__reclass__' : {'node': entity.name, 'name': nodename,
@@ -153,17 +212,23 @@ class Core(object):
         return ret
 
     def nodeinfo(self, nodename):
-        return self._nodeinfo_as_dict(nodename, self._nodeinfo(nodename))
+        return self._nodeinfo_as_dict(nodename, self._nodeinfo(nodename, None))
 
     def inventory(self):
+        query_nodes = set()
         entities = {}
+        inventory = self._get_inventory(True, '', None)
         for n in self._storage.enumerate_nodes():
-            entities[n] = self._nodeinfo(n)
+            entities[n] = self._nodeinfo(n, inventory)
+            if entities[n].parameters.has_inv_query():
+                nodes.add(n)
+        for n in query_nodes:
+            entities[n] = self._nodeinfo(n, inventory)
 
         nodes = {}
         applications = {}
         classes = {}
-        for f, nodeinfo in entities.items():
+        for (f, nodeinfo) in iteritems(entities):
             d = nodes[f] = self._nodeinfo_as_dict(f, nodeinfo)
             for a in d['applications']:
                 if a in applications:
