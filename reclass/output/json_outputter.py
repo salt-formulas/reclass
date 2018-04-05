@@ -11,7 +11,7 @@ import json
 
 class Outputter(OutputterBase):
 
-    def dump(self, data, pretty_print=False):
+    def dump(self, data, pretty_print=False, no_refs=False):
         separators = (',', ': ') if pretty_print else (',', ':')
         indent = 2 if pretty_print else None
         return json.dumps(data, indent=indent, separators=separators)

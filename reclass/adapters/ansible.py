@@ -10,8 +10,13 @@
 # Copyright © 2007–14 martin f. krafft <madduck@madduck.net>
 # Released under the terms of the Artistic Licence 2.0
 #
+# 2017.08.08 Andew Pickford <anpickford@googlemail.com>
+# The ansible adapter has received little testing and may not work at all now.
+
 
 import os, sys, posix, optparse
+
+from six import iteritems
 
 from reclass import get_storage, output
 from reclass.core import Core
@@ -19,6 +24,7 @@ from reclass.errors import ReclassException
 from reclass.config import find_and_read_configfile, get_options
 from reclass.version import *
 from reclass.constants import MODE_NODEINFO
+from reclass.settings import Settings
 
 def cli():
     try:
@@ -27,6 +33,7 @@ def cli():
         ansible_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 
         defaults = {'inventory_base_uri': ansible_dir,
+                    'no_refs' : False,
                     'pretty_print' : True,
                     'output' : 'json',
                     'applications_postfix': '_hosts'
@@ -54,10 +61,11 @@ def cli():
                               add_options_cb=add_ansible_options_group,
                               defaults=defaults)
 
-        storage = get_storage(options.storage_type, options.nodes_uri,
-                              options.classes_uri)
+        storage = get_storage(options.storage_type, options.nodes_uri, options.classes_uri)
         class_mappings = defaults.get('class_mappings')
-        reclass = Core(storage, class_mappings)
+        defaults.update(vars(options))
+        settings = Settings(defaults)
+        reclass = Core(storage, class_mappings, settings)
 
         if options.mode == MODE_NODEINFO:
             data = reclass.nodeinfo(options.hostname)
@@ -75,13 +83,13 @@ def cli():
             apps = data['applications']
             if options.applications_postfix:
                 postfix = options.applications_postfix
-                groups.update([(k + postfix, v) for k,v in apps.iteritems()])
+                groups.update([(k + postfix, v) for (k, v) in iteritems(apps)])
             else:
                 groups.update(apps)
 
             data = groups
 
-        print output(data, options.output, options.pretty_print)
+        print output(data, options.output, options.pretty_print, options.no_refs)
 
     except ReclassException, e:
         e.exit_with_message(sys.stderr)

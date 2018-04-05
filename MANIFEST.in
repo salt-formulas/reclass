@@ -4,9 +4,11 @@ include LICENSE ChangeLog.rst
 exclude Makefile requirements.txt .pylintrc  reclass.py
 # Exclude testing infra
 exclude run_tests.py
+prune reclass/tests
 prune reclass/datatypes/tests
 prune reclass/storage/tests
 prune reclass/utils/tests
+prune reclass/values/tests
 # Exclude "source only" content
 prune doc
 prune examples

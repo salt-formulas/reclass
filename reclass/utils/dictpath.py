@@ -7,7 +7,8 @@
 # Released under the terms of the Artistic Licence 2.0
 #
 
-import types, re
+import six
+import re
 
 class DictPath(object):
     '''
@@ -59,12 +60,12 @@ class DictPath(object):
         if contents is None:
             self._parts = []
         else:
-            if isinstance(contents, types.StringTypes):
+            if isinstance(contents, list):
+                self._parts = contents
+            elif isinstance(contents, six.string_types):
                 self._parts = self._split_string(contents)
             elif isinstance(contents, tuple):
                 self._parts = list(contents)
-            elif isinstance(contents, list):
-                self._parts = contents
             else:
                 raise TypeError('DictPath() takes string or list, '\
                                 'not %s' % type(contents))
@@ -76,7 +77,7 @@ class DictPath(object):
         return self._delim.join(str(i) for i in self._parts)
 
     def __eq__(self, other):
-        if isinstance(other, types.StringTypes):
+        if isinstance(other, six.string_types):
             other = DictPath(self._delim, other)
 
         return self._parts == other._parts \
@@ -112,14 +113,59 @@ class DictPath(object):
     def _escape_string(self, string):
         return string.replace(self._delim, '\\' + self._delim)
 
+    def has_ancestors(self):
+        return len(self._parts) > 1
+
+    def key_parts(self):
+        if self.has_ancestors():
+            return self._parts[:-1]
+        else:
+            return []
+
     def new_subpath(self, key):
-        try:
-            return DictPath(self._delim, self._parts + [self._escape_string(key)])
-        except AttributeError as e:
-            return DictPath(self._delim, self._parts + [key])
+        return DictPath(self._delim, self._parts + [key])
 
     def get_value(self, base):
         return self._get_innermost_container(base)[self._get_key()]
 
     def set_value(self, base, value):
         self._get_innermost_container(base)[self._get_key()] = value
+
+    def drop_first(self):
+        del self._parts[0]
+        return self
+
+    def is_empty(self):
+        return len(self._parts) == 0
+
+    def delete(self, base):
+        del self._get_innermost_container(base)[self._get_key()]
+
+    def add_subpath(self, key):
+        self._parts.append(key)
+
+    def is_ancestor_of(self, other):
+        if len(other._parts) <= len(self._parts):
+            return False
+        for i in range(len(self._parts)):
+            if other._parts[i] != self._parts[i]:
+                return False
+        return True
+
+    def exists_in(self, container):
+        item = container
+        for i in self._parts:
+            if isinstance(item, (dict, list)):
+                if i in item:
+                    if isinstance(item, dict):
+                        item = item[i]
+                    elif isinstance(container, list):
+                        item = item[int(i)]
+                else:
+                    return False
+            else:
+                if item == self._parts[-1]:
+                    return True
+                else:
+                    return False
+        return True

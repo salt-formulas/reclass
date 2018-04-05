@@ -1,5 +1,6 @@
 *.py[co]
 .*.sw?
+.DS_Store
 /reclass-config.yml
 /reclass.egg-info
 /build

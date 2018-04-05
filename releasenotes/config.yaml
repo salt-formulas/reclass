@@ -1,0 +1,66 @@
+---
+# Usage:
+#
+# reno -qd .releasenotes list
+# reno -qd .releasenotes new slug-title --edit
+# reno -qd .releasenotes report --no-show-source
+
+# Change prelude_section_name to 'summary' from default value prelude
+prelude_section_name: summary
+show_source: False
+sections:
+  - [summary, Summary]
+  - [features, New features]
+  - [fixes, Bug fixes]
+  - [others, Other notes]
+template: |
+  ---
+  # Author the following sections or remove the section if it is not related.
+  # Use one release note per a feature.
+  #
+  # If you miss a section from the list below, please first submit a review
+  # adding it to .releasenotes/config.yaml.
+  #
+  # Format content with reStructuredText (RST).
+  # **Formatting examples:**
+  # - |
+  #   This is a brief description of the feature. It may include a
+  #   number of components:
+  #
+  #   * List item 1
+  #   * List item 2.
+  #     This code block below will appear as part of the list item 2:
+  #
+  #     .. code-block:: yaml
+  #
+  #        classes:
+  #        - system.class.to.load
+  #
+  #   The code block below will appear on the same level as the feature
+  #   description:
+  #
+  #   .. code-block:: text
+  #
+  #      provide model/formula pillar snippets
+
+
+  summary: >
+    This section is not mandatory. Use it to highlight the change.
+
+  features:
+    - Use the list to record summary of **NEW** features
+    - Provide detailed description of the feature indicating the use cases
+      when users benefit from using it
+    - Provide steps to deploy the feature (if the procedure is complicated
+      indicate during what stage of the deployment workflow it should be
+      deployed).
+    - Provide troubleshooting information, if any.
+
+  fixes:
+    - Use the list to record summary of a bug fix for blocker, critical.
+    - Provide a brief summary of what has been fixed.
+
+  others:
+    - Author any additional notes. Use this section if note is not related to
+      any of the common sections above.
+
