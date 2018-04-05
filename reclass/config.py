@@ -12,6 +12,7 @@ import yaml, os, optparse, posix, sys
 import errors
 from defaults import *
 from constants import MODE_NODEINFO, MODE_INVENTORY
+from reclass import get_path_mangler
 
 def make_db_options_group(parser, defaults={}):
     ret = optparse.OptionGroup(parser, 'Database options',
@@ -20,21 +21,20 @@ def make_db_options_group(parser, defaults={}):
                    default=defaults.get('storage_type', OPT_STORAGE_TYPE),
                    help='the type of storage backend to use [%default]')
     ret.add_option('-b', '--inventory-base-uri', dest='inventory_base_uri',
-                   default=defaults.get('inventory_base_uri',
-                                        OPT_INVENTORY_BASE_URI),
+                   default=defaults.get('inventory_base_uri', OPT_INVENTORY_BASE_URI),
                    help='the base URI to prepend to nodes and classes [%default]'),
     ret.add_option('-u', '--nodes-uri', dest='nodes_uri',
                    default=defaults.get('nodes_uri', OPT_NODES_URI),
                    help='the URI to the nodes storage [%default]'),
     ret.add_option('-c', '--classes-uri', dest='classes_uri',
                    default=defaults.get('classes_uri', OPT_CLASSES_URI),
-                   help='the URI to the classes storage [%default]')
+                   help='the URI to the classes storage [%default]'),
     ret.add_option('-z', '--ignore-class-notfound', dest='ignore_class_notfound',
                    default=defaults.get('ignore_class_notfound', OPT_IGNORE_CLASS_NOTFOUND),
                    help='decision for not found classes [%default]')
-    ret.add_option('-x', '--ignore-class-regexp', dest='ignore_class_regexp',
-                   default=defaults.get('ignore_class_regexp', OPT_IGNORE_CLASS_REGEXP),
-                   help='decision for not found classes [%default]')
+    ret.add_option('-x', '--ignore-class-notfound-regexp', dest='ignore_class_notfound_regexp',
+                   default=defaults.get('ignore_class_notfound_regexp', OPT_IGNORE_CLASS_NOTFOUND_REGEXP),
+                   help='regexp for not found classes [%default]')
     return ret
 
 
@@ -44,10 +44,17 @@ def make_output_options_group(parser, defaults={}):
     ret.add_option('-o', '--output', dest='output',
                    default=defaults.get('output', OPT_OUTPUT),
                    help='output format (yaml or json) [%default]')
-    ret.add_option('-y', '--pretty-print', dest='pretty_print',
-                   action="store_true",
+    ret.add_option('-y', '--pretty-print', dest='pretty_print', action="store_true",
                    default=defaults.get('pretty_print', OPT_PRETTY_PRINT),
                    help='try to make the output prettier [%default]')
+    ret.add_option('-r', '--no-refs', dest='no_refs', action="store_true",
+                   default=defaults.get('no_refs', OPT_NO_REFS),
+                   help='output all key values do not use yaml references [%default]')
+    ret.add_option('-1', '--single-error', dest='group_errors', action="store_false",
+                   default=defaults.get('group_errors', OPT_GROUP_ERRORS),
+                   help='throw errors immediately instead of grouping them together')
+    ret.add_option('-0', '--multiple-errors', dest='group_errors', action="store_true",
+                   help='were possible report any errors encountered as a group')
     return ret
 
 
@@ -134,30 +141,6 @@ def make_parser_and_checker(name, version, description,
     return parser, option_checker
 
 
-def path_mangler(inventory_base_uri, nodes_uri, classes_uri):
-
-    if inventory_base_uri is None:
-        # if inventory_base is not given, default to current directory
-        inventory_base_uri = os.getcwd()
-
-    nodes_uri = nodes_uri or 'nodes'
-    classes_uri = classes_uri or 'classes'
-
-    def _path_mangler_inner(path):
-        ret = os.path.join(inventory_base_uri, path)
-        ret = os.path.expanduser(ret)
-        return os.path.abspath(ret)
-
-    n, c = map(_path_mangler_inner, (nodes_uri, classes_uri))
-    if n == c:
-        raise errors.DuplicateUriError(n, c)
-    common = os.path.commonprefix((n, c))
-    if common == n or common == c:
-        raise errors.UriOverlapError(n, c)
-
-    return n, c
-
-
 def get_options(name, version, description,
                             inventory_shortopt='-i',
                             inventory_longopt='--inventory',
@@ -181,9 +164,8 @@ def get_options(name, version, description,
     options, args = parser.parse_args()
     checker(options, args)
 
-    options.nodes_uri, options.classes_uri = \
-            path_mangler(options.inventory_base_uri, options.nodes_uri,
-                         options.classes_uri)
+    path_mangler = get_path_mangler(options.storage_type)
+    options.nodes_uri, options.classes_uri = path_mangler(options.inventory_base_uri, options.nodes_uri, options.classes_uri)
 
     return options
 

@@ -9,13 +9,15 @@
 
 import os, sys, posix
 
-from reclass import get_storage, output
+from six import iteritems
+
+from reclass import get_storage, output, get_path_mangler
 from reclass.core import Core
 from reclass.errors import ReclassException
-from reclass.config import find_and_read_configfile, get_options, \
-        path_mangler
+from reclass.config import find_and_read_configfile, get_options
 from reclass.constants import MODE_NODEINFO
 from reclass.defaults import *
+from reclass.settings import Settings
 from reclass.version import *
 
 def ext_pillar(minion_id, pillar,
@@ -25,19 +27,16 @@ def ext_pillar(minion_id, pillar,
                classes_uri=OPT_CLASSES_URI,
                class_mappings=None,
                propagate_pillar_data_to_reclass=False,
-               ignore_class_notfound=OPT_IGNORE_CLASS_NOTFOUND,
-               ignore_class_regexp=OPT_IGNORE_CLASS_REGEXP):
+               **kwargs):
 
-    nodes_uri, classes_uri = path_mangler(inventory_base_uri,
-                                          nodes_uri, classes_uri)
-    storage = get_storage(storage_type, nodes_uri, classes_uri,
-                          default_environment='base')
+    path_mangler = get_path_mangler(storage_type)
+    nodes_uri, classes_uri = path_mangler(inventory_base_uri, nodes_uri, classes_uri)
+    storage = get_storage(storage_type, nodes_uri, classes_uri)
     input_data = None
     if propagate_pillar_data_to_reclass:
         input_data = pillar
-    reclass = Core(storage, class_mappings, input_data=input_data,
-                   ignore_class_notfound=ignore_class_notfound,
-                   ignore_class_regexp=ignore_class_regexp)
+    settings = Settings(kwargs)
+    reclass = Core(storage, class_mappings, settings, input_data=input_data)
 
     data = reclass.nodeinfo(minion_id)
     params = data.get('parameters', {})
@@ -51,18 +50,13 @@ def ext_pillar(minion_id, pillar,
 
 def top(minion_id, storage_type=OPT_STORAGE_TYPE,
         inventory_base_uri=OPT_INVENTORY_BASE_URI, nodes_uri=OPT_NODES_URI,
-        classes_uri=OPT_CLASSES_URI,
-        class_mappings=None,
-        ignore_class_notfound=OPT_IGNORE_CLASS_NOTFOUND,
-        ignore_class_regexp=OPT_IGNORE_CLASS_REGEXP):
+        classes_uri=OPT_CLASSES_URI, class_mappings=None, **kwargs):
 
-    nodes_uri, classes_uri = path_mangler(inventory_base_uri,
-                                          nodes_uri, classes_uri)
-    storage = get_storage(storage_type, nodes_uri, classes_uri,
-                          default_environment='base')
-    reclass = Core(storage, class_mappings, input_data=None,
-                   ignore_class_notfound=ignore_class_notfound,
-                   ignore_class_regexp=ignore_class_regexp)
+    path_mangler = get_path_mangler(storage_type)
+    nodes_uri, classes_uri = path_mangler(inventory_base_uri, nodes_uri, classes_uri)
+    storage = get_storage(storage_type, nodes_uri, classes_uri)
+    settings = Settings(kwargs)
+    reclass = Core(storage, class_mappings, settings, input_data=None)
 
     # if the minion_id is not None, then return just the applications for the
     # specific minion, otherwise return the entire top data (which we need for
@@ -76,7 +70,7 @@ def top(minion_id, storage_type=OPT_STORAGE_TYPE,
     else:
         data = reclass.inventory()
         nodes = {}
-        for node_id, node_data in data['nodes'].items():
+        for (node_id, node_data) in iteritems(data['nodes']):
             env = node_data['environment']
             if env not in nodes:
                 nodes[env] = {}
@@ -89,6 +83,7 @@ def cli():
     try:
         inventory_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
         defaults = {'pretty_print' : True,
+                    'no_refs' : False,
                     'output' : 'yaml',
                     'inventory_base_uri': inventory_dir
                    }
@@ -103,6 +98,12 @@ def cli():
                               nodeinfo_help='output pillar data for a specific node',
                               defaults=defaults)
         class_mappings = defaults.get('class_mappings')
+        defaults.update(vars(options))
+        defaults.pop("storage_type", None)
+        defaults.pop("inventory_base_uri", None)
+        defaults.pop("nodes_uri", None)
+        defaults.pop("classes_uri", None)
+        defaults.pop("class_mappings", None)
 
         if options.mode == MODE_NODEINFO:
             data = ext_pillar(options.nodename, {},
@@ -111,8 +112,7 @@ def cli():
                               nodes_uri=options.nodes_uri,
                               classes_uri=options.classes_uri,
                               class_mappings=class_mappings,
-                              ignore_class_notfound=options.ignore_class_notfound,
-                              ignore_class_regexp=options.ignore_class_regexp)
+                              **defaults)
         else:
             data = top(minion_id=None,
                        storage_type=options.storage_type,
@@ -120,10 +120,9 @@ def cli():
                        nodes_uri=options.nodes_uri,
                        classes_uri=options.classes_uri,
                        class_mappings=class_mappings,
-                       ignore_class_notfound=options.ignore_class_notfound,
-                       ignore_class_regexp=options.ignore_class_regexp)
+                       **defaults)
 
-        print output(data, options.output, options.pretty_print)
+        print output(data, options.output, options.pretty_print, options.no_refs)
 
     except ReclassException, e:
         e.exit_with_message(sys.stderr)

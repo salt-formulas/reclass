@@ -63,7 +63,7 @@ class TestApplications(unittest.TestCase):
         l = ['a', '~b', 'a', '~d']
         a = Applications(l)
         is_negation = lambda x: x.startswith(a.negation_prefix)
-        GOAL = filter(lambda x: not is_negation(x), set(l)) + filter(is_negation, l)
+        GOAL = list(filter(lambda x: not is_negation(x), set(l))) + list(filter(is_negation, l))
         self.assertEqual('%r' % a, "%s(%r, '~')" % (a.__class__.__name__, GOAL))
 
 if __name__ == '__main__':

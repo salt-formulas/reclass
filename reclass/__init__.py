@@ -16,8 +16,10 @@ def get_storage(storage_type, nodes_uri, classes_uri, **kwargs):
     storage_class = StorageBackendLoader(storage_type).load()
     return MemcacheProxy(storage_class(nodes_uri, classes_uri, **kwargs))
 
+def get_path_mangler(storage_type,**kwargs):
+    return StorageBackendLoader(storage_type).path_mangler()
 
-def output(data, fmt, pretty_print=False):
+def output(data, fmt, pretty_print=False, no_refs=False):
     output_class = OutputLoader(fmt).load()
     outputter = output_class()
-    return outputter.dump(data, pretty_print=pretty_print)
+    return outputter.dump(data, pretty_print=pretty_print, no_refs=no_refs)
