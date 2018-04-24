@@ -1,0 +1,4 @@
+storage_type: yaml_fs
+base_inventory_uri: /etc/reclass
+ignore_class_notfound: True
+# global_class_regexp: ['.*global']

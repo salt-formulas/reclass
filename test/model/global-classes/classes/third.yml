@@ -1,0 +1,19 @@
+classes:
+- global
+- ${_class:second}
+- lab.${_class:env:override}
+
+parameters:
+  _param:
+    ccc: 333
+    aaa: 111
+    # zzz: 'is not defined'
+  mykey: ${_param:ccc}
+  some:
+    tree:
+      to:
+        fail: ${_param:zzz}
+  lab3:
+    name: lab3
+  lab:
+    label: three

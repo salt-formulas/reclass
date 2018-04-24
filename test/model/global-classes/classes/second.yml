@@ -1,0 +1,15 @@
+classes:
+- global
+- ${_class:first}
+
+parameters:
+  _param:
+     # aaa: 'is not defined at this level'
+     # zzz: 'is not defined'
+     bbb: ${_param:aaa}
+     ccc: ${_param:bbb}
+  mykey: ${_param:ccc}
+  lab2:
+    name: lab2
+  lab:
+    label: second
