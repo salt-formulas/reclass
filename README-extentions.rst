@@ -208,6 +208,82 @@ Instead of failing on the first undefinded reference error all missing reference
   group_errors: True
 
 
+Use references in class names
+-----------------------------
+
+Allows to use references in the class names.
+
+References pointed to in class names cannot themselves reference another key, they should be simple strings.
+
+To avoid pitfalls do not over-engineer your class references. They should be used only for core conditions and only for them.
+A short example: `- system.wrodpress.db.${_class:database_backend}`.
+
+Best practices:
+- use references in class names always load your global class specification prior the reference is used.
+- structure your class references under parameters under one key (for example `_class`).
+- use class references as a kind of "context" or "global" available options you always know what they are set.
+
+Class referencing for existing reclass users. Frequently when constructing your models you had to load or not load some
+classes based on your setup. In most cases this lead to fork of a model or introducing kind of template generator (like cookiecutter) to
+create a model based on the base "context" or "global" variables. Class referencing is a simple way how to avoid
+"pre-processors" like this and if/else conditions around class section.
+
+
+Assuming following class setup:
+
+* node is loading `third.yml` class only
+
+
+Classes:
+
+.. code-block:: yaml
+  #/etc/reclass/classes/global.yml
+  parameters:
+    _class:
+      env:
+        override: 'env.dev'
+    lab:
+      name: default
+
+  #/etc/reclass/classes/lab/env/dev.yml
+  parameters:
+    lab:
+      name: dev
+
+  #/etc/reclass/classes/second.yml
+  classes:
+    - global
+    - lab.${_class:env:override}
+
+  #/etc/reclass/classes/third.yml
+  classes:
+    - global
+    - second
+
+
+Reclass --nodeinfo then returns:
+
+.. code-block:: yaml
+
+  ...
+  ...
+  applications: []
+  environment: base
+  exports: {}
+  classes:
+  - first
+  - lab.${_class:env:override}
+  - second
+  parameters:
+    _class:
+      env:
+        override: env.dev
+    lab:
+      name: dev
+    ...
+    ...
+
+
 Inventory Queries
 -----------------
 

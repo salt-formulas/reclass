@@ -158,6 +158,17 @@ class ClassNotFound(InterpolationError):
         return msg
 
 
+class ClassNameResolveError(InterpolationError):
+    def __init__(self, classname, nodename, uri):
+        super(ClassNameResolveError, self).__init__(msg=None, uri=uri, nodename=nodename)
+        self.name = classname
+
+    def _get_error_message(self):
+        msg = [ 'In {0}'.format(self.uri),
+                'Class name {0} not resolvable'.format(self.name) ]
+        return msg
+
+
 class InvQueryClassNotFound(InterpolationError):
 
     def __init__(self, classNotFoundError, nodename=''):
@@ -169,6 +180,19 @@ class InvQueryClassNotFound(InterpolationError):
         msg = [ 'Inventory Queries:',
                 '-> {0}'.format(self.classNotFoundError.nodename) ]
         msg.append(self.classNotFoundError._get_error_message())
+        return msg
+
+
+class InvQueryClassNameResolveError(InterpolationError):
+    def __init__(self, classNameResolveError, nodename=''):
+        super(InvQueryClassNameResolveError, self).__init__(msg=None, nodename=nodename)
+        self.classNameResolveError = classNameResolveError
+        self._traceback = self.classNameResolveError._traceback
+
+    def _get_error_message(self):
+        msg = [ 'Inventory Queries:',
+                '-> {0}'.format(self.classNameResolveError.nodename) ]
+        msg.append(self.classNameResolveError._get_error_message())
         return msg
 
 
