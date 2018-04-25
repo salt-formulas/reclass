@@ -109,9 +109,9 @@ class ValueList(object):
                 deepCopied = False
             else:
                 if isinstance(output, dict) and isinstance(new, dict):
-                    p1 = Parameters(output, self._settings, None, merge_initialise = False)
-                    p2 = Parameters(new, self._settings, None, merge_initialise = False)
-                    p1.merge(p2, wrap=False)
+                    p1 = Parameters(output, self._settings, None, parse_strings=False)
+                    p2 = Parameters(new, self._settings, None, parse_strings=False)
+                    p1.merge(p2)
                     output = p1.as_dict()
                     continue
                 elif isinstance(output, list) and isinstance(new, list):
