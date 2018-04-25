@@ -271,7 +271,7 @@ Reclass --nodeinfo then returns:
   environment: base
   exports: {}
   classes:
-  - first
+  - global
   - lab.${_class:env:override}
   - second
   parameters:
