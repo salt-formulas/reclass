@@ -655,6 +655,26 @@ class TestParametersNoMock(unittest.TestCase):
         p1.interpolate()
         self.assertEqual(p1.as_dict(), r)
 
+    def test_escaped_string_overwrites(self):
+        p1 = Parameters({ 'test': '\${not_a_ref}' }, SETTINGS, '')
+        p2 = Parameters({ 'test': '\${also_not_a_ref}' }, SETTINGS, '')
+        r = { 'test': '${also_not_a_ref}' }
+        p1.merge(p2)
+        p1.interpolate()
+        self.assertEqual(p1.as_dict(), r)
+
+    def test_escaped_string_in_ref_dict_overwrite(self):
+        p1 = Parameters({'a': { 'one': '\${not_a_ref}' }, 'b': { 'two': '\${also_not_a_ref}' }}, SETTINGS, '')
+        p2 = Parameters({'c': '${a}'}, SETTINGS, '')
+        p3 = Parameters({'c': '${b}'}, SETTINGS, '')
+        p4 = Parameters({'c': { 'one': '\${again_not_a_ref}' } }, SETTINGS, '')
+        r = {'a': {'one': '${not_a_ref}'}, 'b': {'two': '${also_not_a_ref}'}, 'c': {'one': '${again_not_a_ref}', 'two': '${also_not_a_ref}'}}
+        p1.merge(p2)
+        p1.merge(p3)
+        p1.merge(p4)
+        p1.interpolate()
+        self.assertEqual(p1.as_dict(), r)
+
 
 if __name__ == '__main__':
     unittest.main()
