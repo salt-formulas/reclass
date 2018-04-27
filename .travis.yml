@@ -7,14 +7,6 @@ python:
 - '3.6'
 service:
 - docker
-addons:
-  apt:
-    packages:
-    - gcc
-    - ruby
-    - python-virtualenv
-    - python-pygit2
-    - python3-pygit2
 
 stages:
 - name: test
@@ -30,65 +22,66 @@ env:
     - PACKAGENAME="reclass"
 
 install: &pyinst
-- python -m ensurepip --default-pip
-- pip install pipenv
-- pipenv --python $TRAVIS_PYTHON_VERSION
-- pipenv install
+- pip install pyparsing
+- pip install PyYAML
+
+script: echo foo
 
 jobs:
   include:
   - stage: test
     script: &unittest
-    - pipenv shell
+    - python setup.py install
     - find . reclass -name 'test_*.py' | sort | xargs -n1 -i% bash -c "echo %; python %"
 
-  - stage: coverage
-    install: *pyinst
-    script:
-    - python3 -m pytest --cov=. --cov-report=term-missing:skip-covered
-    - coverage xml
-    #- coveralls
-    #- |
-        #[ ! -z "${CODACY_PROJECT_TOKEN}" ] && python-codacy-coverage -r coverage.xml || echo "Codacy coverage NOT exported"
-
-  - stage: lint
-    script:
-    - python3 -m flake8
-
-  - stage: models
-    install: &kitchen
-    - pip install PyYAML
-    - pip install virtualenv
-    - |
-      test -e Gemfile || cat <<EOF > Gemfile
-      source 'https://rubygems.org'
-      gem 'rake'
-      gem 'test-kitchen'
-      gem 'kitchen-docker'
-      gem 'kitchen-inspec'
-      gem 'inspec'
-    - bundle install
-    script:
-    - export PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
-    - kitchen list
-    #FIXME- kitchen test
-
-  - stage: build
-    install: *pyinst
-    script: []
-
-  - stage: publish
-    install:
-    - "/bin/true"
-    script:
-    - "/bin/true"
-    deploy:
-      provider: pypi
-      user: epcim
-      password:
-        secure: TBD
-      on:
-        tags: true
-        repo: salt-formulas/reclass
-        branch: master
-        #FIXME, $TRAVIS_PYTHON_VERSION == '2.7'
+# NOTE: stages below saved for future reference
+#  - stage: coverage
+#    install: *pyinst
+#    script:
+#    - python3 -m pytest --cov=. --cov-report=term-missing:skip-covered
+#    - coverage xml
+#    #- coveralls
+#    #- |
+#        #[ ! -z "${CODACY_PROJECT_TOKEN}" ] && python-codacy-coverage -r coverage.xml || echo "Codacy coverage NOT exported"
+#
+#  - stage: lint
+#    script:
+#    - python3 -m flake8
+#
+#  - stage: models
+#    install: &kitchen
+#    - pip install PyYAML
+#    - pip install virtualenv
+#    - |
+#      test -e Gemfile || cat <<EOF > Gemfile
+#      source 'https://rubygems.org'
+#      gem 'rake'
+#      gem 'test-kitchen'
+#      gem 'kitchen-docker'
+#      gem 'kitchen-inspec'
+#      gem 'inspec'
+#    - bundle install
+#    script:
+#    - export PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
+#    - kitchen list
+#    #FIXME- kitchen test
+#
+#  - stage: build
+#    install: *pyinst
+#    script: []
+#
+#  - stage: publish
+#    install:
+#    - "/bin/true"
+#    script:
+#    - "/bin/true"
+#    deploy:
+#      provider: pypi
+#      user: epcim
+#      password:
+#        secure: TBD
+#      on:
+#        tags: true
+#        repo: salt-formulas/reclass
+#        branch: master
+#        #FIXME, $TRAVIS_PYTHON_VERSION == '2.7'
