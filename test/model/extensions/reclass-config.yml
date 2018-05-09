@@ -1,0 +1,3 @@
+storage_type: yaml_fs
+ignore_class_notfound: True
+ignore_class_regexp: ['.*']

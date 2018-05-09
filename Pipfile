@@ -8,9 +8,10 @@ name = "pypi"
 [packages]
 pyparsing = "*"
 PyYAML = "*"
-"pygit2" = "*"
 six = "*"
 pyyaml = "*"
+# FIXME, issues with compile phase
+#"pygit2" = "*"
 
 [requires]
 python_version = "2.7"

@@ -1,0 +1,13 @@
+classes:
+- missing.class
+- second
+
+parameters:
+  _param:
+    notfound: exist
+  myparam: ${_param:some}
+  will:
+    not:
+      fail:
+        at:
+          tree: ${_param:notfound}

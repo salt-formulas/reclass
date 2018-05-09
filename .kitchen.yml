@@ -1,35 +1,41 @@
 ---
 driver:
   name: docker
+  priviledged: false
   use_sudo: false
   volume:
     - <%= ENV['PWD'] %>:/tmp/kitchen
+
 
 provisioner:
   name: shell
   script: .kitchen-verify.sh
 
+
 verifier:
   name: inspec
 
-<%- pyver = ENV['PYTHON_VERSION'] || '3.6' %>
+<%- pyver = ENV['PYTHON_VERSION'] || '2.7' %>
 
 platforms:
   <% `find test/model -maxdepth 1 -mindepth 1 -type d |sort -u`.split().each do |model| %>
   <% model=model.split('/')[2] %>
   - name: <%= model %>
     driver_config:
-      image: python:<%= pyver =%>
-      #platform: ubuntu
+      image: python:<%= pyver %>
+      platform: ubuntu
       hostname: reclass
       provision_command:
-        - #FIXME, setup reclass env (prereq, configs, upload models)
+        #FIXME, setup reclass env (prereq, configs, upload models)
+        #- apt-get install -y rsync
         - echo "
+            export LC_ALL=C.UTF-8;\n
+            export LANG=C.UTF-8;\n
             export PYVER=<%= pyver %>;\n
             export MODEL=<%= model %>;\n
           " > /kitchen.env
   <% end %>
 
 suites:
-  - name: cluster
+  - name: model
 
