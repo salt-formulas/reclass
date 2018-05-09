@@ -1,6 +1,6 @@
 parameters:
+  _param:
+    some: param
   lab:
     name: test
     label: first
-  lab1:
-    name: lab1

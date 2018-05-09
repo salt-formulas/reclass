@@ -38,9 +38,9 @@ def main():
         else:
             data = reclass.inventory()
 
-        print output(data, options.output, options.pretty_print, options.no_refs)
+        print(output(data, options.output, options.pretty_print, options.no_refs))
 
-    except ReclassException, e:
+    except ReclassException as e:
         e.exit_with_message(sys.stderr)
 
     sys.exit(posix.EX_OK)

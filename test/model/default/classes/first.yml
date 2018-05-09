@@ -1,0 +1,32 @@
+parameters:
+  _param:
+    some: param
+    colour: red
+  lab:
+    name: test
+    label: first
+  colour:
+    escaped: \${_param:colour}
+    doubleescaped: \\${_param:colour}
+    unescaped: ${_param:colour}
+  colours:
+    red:
+      name: red
+    blue:
+      name: blue
+  one:
+    a: 1
+    b: 2
+  two:
+    c: 3
+    d: 4
+  three:
+    e: 5
+  list_to_override:
+  - one
+  - two
+  dict_to_override:
+   one: 1
+   two: 2
+
+

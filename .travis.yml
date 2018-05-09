@@ -8,8 +8,11 @@ python:
 service:
 - docker
 
-stages:
-- name: test
+#apt:
+  #update: true
+
+#stages:
+#- name: test
 #- name: coverage
 #- name: models
 #- name: build
@@ -24,17 +27,33 @@ env:
 install: &pyinst
 - pip install pyparsing
 - pip install PyYAML
+# To test example models with kitchen:
+- |
+  test -e Gemfile || cat <<EOF > Gemfile
+  source 'https://rubygems.org'
+  gem 'rake'
+  gem 'test-kitchen'
+  gem 'kitchen-docker'
+  gem 'kitchen-inspec'
+  gem 'inspec'
+- bundle install
 
-script: echo foo
+script:
+- python setup.py install
+- find . reclass -name 'test_*.py' | sort | xargs -n1 -i% bash -c "echo %; python %"
+# To test example models with kitchen:
+- export PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
+- kitchen list
+- if [ "$PYTHON_VERSION" = "2.7" ]; then kitchen test; fi
 
-jobs:
-  include:
-  - stage: test
-    script: &unittest
-    - python setup.py install
-    - find . reclass -name 'test_*.py' | sort | xargs -n1 -i% bash -c "echo %; python %"
-
-# NOTE: stages below saved for future reference
+# NOTE: travis stage builds, below saved for future reference
+#jobs:
+#  include:
+#  - stage: test
+#    script: &unittest
+#    - python setup.py install
+#    - find . reclass -name 'test_*.py' | sort | xargs -n1 -i% bash -c "echo %; python %"
+#
 #  - stage: coverage
 #    install: *pyinst
 #    script:
@@ -85,3 +104,13 @@ jobs:
 #        repo: salt-formulas/reclass
 #        branch: master
 #        #FIXME, $TRAVIS_PYTHON_VERSION == '2.7'
+
+notifications:
+  webhooks:
+    on_success: change  # options: [always|never|change] default: always
+    on_failure: never
+    on_start: never
+    on_cancel: never
+    on_error: never
+  email: true
+

@@ -1,0 +1,18 @@
+classes:
+- second
+
+parameters:
+  _param:
+    notfound: exist
+  myparam: ${_param:some}
+  will:
+    not:
+      fail:
+        at:
+          tree: ${_param:notfound}
+  three: ${two}
+  empty:
+    list: []
+    dict: {}
+  ~list_to_override: ${empty:list}
+  ~dict_to_override: ${empty:dict}
