@@ -208,6 +208,28 @@ Instead of failing on the first undefinded reference error all missing reference
   group_errors: True
 
 
+Use global classes
+------------------
+
+Allows specify regexp pattern for "global class".
+
+Normally, classes are loaded when first seen. Thus they are not evaluated later when hit 2nd time. Only way to override
+parameters they load is by another class.
+
+Global classes, recognized by regexp pattern, are always loaded when hit and thus their content might be
+understood as enforced, globally available and not to be overridden by other class, even deeper in hierarchy.
+
+To avoid pitfalls do not over-engineer your solution. By default global class regexp pattern is not set.
+
+
+Global class regexp setup:
+
+.. code-block:: yaml
+
+  #/etc/reclass/reclass-config.yml
+  global_class_regexp = ['.*global']
+
+
 Use references in class names
 -----------------------------
 

@@ -42,6 +42,11 @@ class Settings(object):
         self.ref_parser = reclass.values.parser_funcs.get_ref_parser(self.escape_character, self.reference_sentinels, self.export_sentinels)
         self.simple_ref_parser = reclass.values.parser_funcs.get_simple_ref_parser(self.escape_character, self.reference_sentinels, self.export_sentinels)
 
+        self.global_class_regexp = options.get('global_class_regexp', OPT_GLOBAL_CLASS_REGEXP)
+        if isinstance(self.global_class_regexp, basestring):
+            self.global_class_regexp = [ self.global_class_regexp ]
+
+
     def __eq__(self, other):
         return isinstance(other, type(self)) \
                and self.allow_scalar_over_dict == other.allow_scalar_over_dict \
@@ -60,7 +65,8 @@ class Settings(object):
                and self.reference_sentinels == other.reference_sentinels \
                and self.ignore_class_notfound == other.ignore_class_notfound \
                and self.ignore_class_notfound_regexp == other.ignore_class_notfound_regexp \
-               and self.ignore_class_notfound_warning == other.ignore_class_notfound_warning
+               and self.ignore_class_notfound_warning == other.ignore_class_notfound_warning \
+               and self.global_class_regexp == other.global_class_regexp
 
     def __copy__(self):
         cls = self.__class__

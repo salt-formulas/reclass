@@ -130,13 +130,18 @@ class Parameters(object):
         else:
             values = ValueList(Value(cur, self._settings, self._uri), self._settings)
 
-        if isinstance(new, Value):
+
+        value_list = isinstance(new, ValueList) or isinstance(cur, ValueList)
+
+        if not value_list and (new.contents() is None or new.contents() == cur.contents()):
+            return cur
+        elif isinstance(new, Value):
             values.append(new)
         elif isinstance(new, ValueList):
             values.extend(new)
         else:
             values.append(Value(new, self._settings, self._uri, parse_string=self._parse_strings))
-
+            
         return values
 
     def _merge_dict(self, cur, new, path):
@@ -188,7 +193,8 @@ class Parameters(object):
 
         """
 
-        if cur is None:
+
+        if cur is None or str(cur) == 'None':
             return new
         elif isinstance(new, dict) and isinstance(cur, dict):
             return self._merge_dict(cur, new, path)
