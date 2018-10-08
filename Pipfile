@@ -9,6 +9,7 @@ name = "pypi"
 pyparsing = "*"
 PyYAML = "*"
 six = "*"
+pyyaml = "*"
 enum34 = "*"
 # FIXME, issues with compile phase
 #"pygit2" = "*"
