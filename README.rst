@@ -35,7 +35,7 @@ Queries:
 
 * yg, yaml grep with 'jq' syntax - https://gist.github.com/epcim/f1c5b748fa7c942de50677aef04f29f8, (https://asciinema.org/a/84173)
 * reclass-graph - https://github.com/tomkukral/reclass-graph
-  
+
 Introspection, manupulation:
 
 * reclass-tools, for manipulating reclass models - https://github.com/dis-xcom/reclass_tools

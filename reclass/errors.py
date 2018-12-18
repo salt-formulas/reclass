@@ -291,7 +291,7 @@ class TypeMergeError(InterpolationError):
         self.type2 = value2.item_type_str()
 
     def _get_error_message(self):
-        msg = [ 'Canot merge {0} over {1}'.format(self.type1, self.type2) + self._add_context_and_uri() ]
+        msg = [ 'Cannot merge {0} over {1}'.format(self.type1, self.type2) + self._add_context_and_uri() ]
         return msg
 
 

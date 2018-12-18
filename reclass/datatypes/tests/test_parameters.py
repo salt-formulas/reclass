@@ -194,7 +194,7 @@ class TestParametersNoMock(unittest.TestCase):
         with self.assertRaises(TypeMergeError) as e:
             p1.merge(p2)
             p1.interpolate()
-        self.assertEqual(e.exception.message, "-> \n   Canot merge list over scalar, at key, in ; ")
+        self.assertEqual(e.exception.message, "-> \n   Cannot merge list over scalar, at key, in ; ")
 
     def test_merge_list_into_scalar_allow(self):
         settings = Settings({'allow_list_over_scalar': True})
@@ -212,7 +212,7 @@ class TestParametersNoMock(unittest.TestCase):
         with self.assertRaises(TypeMergeError) as e:
             p1.merge(p2)
             p1.interpolate()
-        self.assertEqual(e.exception.message, "-> \n   Canot merge scalar over list, at key, in ; ")
+        self.assertEqual(e.exception.message, "-> \n   Cannot merge scalar over list, at key, in ; ")
 
     def test_merge_scalar_over_list_allow(self):
         l = ['foo', 1, 2]
@@ -231,7 +231,7 @@ class TestParametersNoMock(unittest.TestCase):
         with self.assertRaises(TypeMergeError) as e:
             p1.merge(p2)
             p1.interpolate()
-        self.assertEqual(e.exception.message, "-> \n   Canot merge scalar over list, at key, in ; ")
+        self.assertEqual(e.exception.message, "-> \n   Cannot merge scalar over list, at key, in ; ")
 
     def test_merge_none_over_list_allow(self):
         l = ['foo', 1, 2]
@@ -249,7 +249,7 @@ class TestParametersNoMock(unittest.TestCase):
         with self.assertRaises(TypeMergeError) as e:
             p1.merge(p2)
             p1.interpolate()
-        self.assertEqual(e.exception.message, "-> \n   Canot merge dictionary over scalar, at a, in ; ")
+        self.assertEqual(e.exception.message, "-> \n   Cannot merge dictionary over scalar, at a, in ; ")
 
     def test_merge_dict_over_scalar_allow(self):
         settings = Settings({'allow_dict_over_scalar': True})
@@ -267,7 +267,7 @@ class TestParametersNoMock(unittest.TestCase):
         with self.assertRaises(TypeMergeError) as e:
             p1.merge(p2)
             p1.interpolate()
-        self.assertEqual(e.exception.message, "-> \n   Canot merge scalar over dictionary, at a, in ; ")
+        self.assertEqual(e.exception.message, "-> \n   Cannot merge scalar over dictionary, at a, in ; ")
 
     def test_merge_scalar_over_dict_allow(self):
         d = { 'one': 1, 'two': 2}
@@ -284,7 +284,7 @@ class TestParametersNoMock(unittest.TestCase):
         with self.assertRaises(TypeMergeError) as e:
             p1.merge(p2)
             p1.interpolate()
-        self.assertEqual(e.exception.message, "-> \n   Canot merge scalar over dictionary, at key, in ; ")
+        self.assertEqual(e.exception.message, "-> \n   Cannot merge scalar over dictionary, at key, in ; ")
 
     def test_merge_none_over_dict_allow(self):
         settings = Settings({'allow_none_override': True})
@@ -302,7 +302,7 @@ class TestParametersNoMock(unittest.TestCase):
             p1.merge(p2)
             p1.merge(p3)
             p1.interpolate()
-        self.assertEqual(e.exception.message, "-> \n   Canot merge list over dictionary, at one:a, in second; third")
+        self.assertEqual(e.exception.message, "-> \n   Cannot merge list over dictionary, at one:a, in second; third")
 
     # def test_merge_bare_dict_over_dict(self):
         # settings = Settings({'allow_bare_override': True})
