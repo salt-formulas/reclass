@@ -95,6 +95,7 @@ class ExternalNodeStorage(ExternalNodeStorageBase):
         try:
             relpath = self._nodes[name]
             path = os.path.join(self.nodes_uri, relpath)
+            name = os.path.splitext(relpath)[0]
         except KeyError as e:
             raise reclass.errors.NodeNotFound(self.name, name, self.nodes_uri)
         entity = YamlData.from_file(path).get_entity(name, settings)
