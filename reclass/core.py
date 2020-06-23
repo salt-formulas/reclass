@@ -199,7 +199,7 @@ class Core(object):
 
             if all_envs or node_base.environment == environment:
                 try:
-                    node = self._node_entity(nodename)
+                    node = self._node_entity(nodename, None)
                 except ClassNotFound as e:
                     raise InvQueryClassNotFound(e)
                 except ClassNameResolveError as e:
@@ -221,26 +221,30 @@ class Core(object):
                 inventory[nodename] = NodeInventory(node.exports.as_dict(), node_base.environment == environment)
         return inventory
 
-    def _node_entity(self, nodename):
+    def _node_entity(self, nodename, override_environment):
         node_entity = self._storage.get_node(nodename, self._settings)
-        if node_entity.environment == None:
+        if node_entity.environment is None:
             node_entity.environment = self._settings.default_environment
+        if override_environment is not None:
+            node_entity.environment = override_environment
         base_entity = Entity(self._settings, name='base')
         base_entity.merge(self._get_class_mappings_entity(node_entity))
         base_entity.merge(self._get_input_data_entity())
         base_entity.merge_parameters(self._get_automatic_parameters(nodename, node_entity.environment))
         seen = {}
-        merge_base = self._recurse_entity(base_entity, seen=seen, nodename=nodename,
-                                          environment=node_entity.environment)
-        return self._recurse_entity(node_entity, merge_base=merge_base, context=merge_base, seen=seen,
-                                    nodename=nodename, environment=node_entity.environment)
+        merge_base = self._recurse_entity(
+                         base_entity, seen=seen, nodename=nodename,
+                         environment=node_entity.environment)
+        return self._recurse_entity(
+                     node_entity, merge_base=merge_base, context=merge_base, seen=seen,
+                     nodename=nodename, environment=node_entity.environment)
 
-    def _nodeinfo(self, nodename, inventory):
+    def _nodeinfo(self, nodename, inventory, override_environment):
         try:
-            node = self._node_entity(nodename)
+            node = self._node_entity(nodename, override_environment)
             node.initialise_interpolation()
             if node.parameters.has_inv_query and inventory is None:
-                inventory = self._get_inventory(node.parameters.needs_all_envs, node.environment, node.parameters.get_inv_queries())
+                inventory = self._get_inventory(node.parameters.needs_all_envs, node.original_environment, node.parameters.get_inv_queries())
             node.interpolate(inventory)
             return node
         except InterpolationError as e:
@@ -258,19 +262,19 @@ class Core(object):
         ret.update(entity.as_dict())
         return ret
 
-    def nodeinfo(self, nodename):
-        return self._nodeinfo_as_dict(nodename, self._nodeinfo(nodename, None))
+    def nodeinfo(self, nodename, override_environment=None):
+        return self._nodeinfo_as_dict(nodename, self._nodeinfo(nodename, None, override_environment))
 
     def inventory(self):
         query_nodes = set()
         entities = {}
         inventory = self._get_inventory(True, '', None)
         for n in self._storage.enumerate_nodes():
-            entities[n] = self._nodeinfo(n, inventory)
+            entities[n] = self._nodeinfo(n, inventory, None)
             if entities[n].parameters.has_inv_query:
                 nodes.add(n)
         for n in query_nodes:
-            entities[n] = self._nodeinfo(n, inventory)
+            entities[n] = self._nodeinfo(n, inventory, None)
 
         nodes = {}
         applications = {}

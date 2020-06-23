@@ -19,7 +19,7 @@ from reclass.settings import Settings
 from reclass.config import find_and_read_configfile, get_options
 from reclass.defaults import *
 from reclass.errors import ReclassException
-from reclass.constants import MODE_NODEINFO
+from reclass.constants import MODE_NODEINFO, MODE_NODEAPPS
 from reclass.version import *
 
 def main():
@@ -41,7 +41,10 @@ def main():
         reclass = Core(storage, class_mappings, settings)
 
         if options.mode == MODE_NODEINFO:
-            data = reclass.nodeinfo(options.nodename)
+            data = reclass.nodeinfo(options.nodename, override_environment=options.environment)
+        elif options.mode == MODE_NODEAPPS:
+            nodeinfo = reclass.nodeinfo(options.nodename, override_environment=options.environment)
+            data = { 'applications': nodeinfo['applications'] }
         else:
             data = reclass.inventory()
 
