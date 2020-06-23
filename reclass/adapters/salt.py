@@ -19,12 +19,13 @@ from reclass import get_storage, output, get_path_mangler
 from reclass.core import Core
 from reclass.errors import ReclassException
 from reclass.config import find_and_read_configfile, get_options
-from reclass.constants import MODE_NODEINFO
+from reclass.constants import MODE_NODEINFO, MODE_NODEAPPS
 from reclass.defaults import *
 from reclass.settings import Settings
 from reclass.version import *
 
 def ext_pillar(minion_id, pillar,
+               saltenv=None,
                storage_type=OPT_STORAGE_TYPE,
                inventory_base_uri=OPT_INVENTORY_BASE_URI,
                nodes_uri=OPT_NODES_URI,
@@ -32,6 +33,7 @@ def ext_pillar(minion_id, pillar,
                class_mappings=None,
                propagate_pillar_data_to_reclass=False,
                compose_node_name=OPT_COMPOSE_NODE_NAME,
+               allow_adapter_env_override=OPT_ALLOW_ADAPTER_ENV_OVERRIDE,
                **kwargs):
 
     path_mangler = get_path_mangler(storage_type)
@@ -40,10 +42,13 @@ def ext_pillar(minion_id, pillar,
     input_data = None
     if propagate_pillar_data_to_reclass:
         input_data = pillar
+    if not allow_adapter_env_override:
+        saltenv = None
+
     settings = Settings(kwargs)
     reclass = Core(storage, class_mappings, settings, input_data=input_data)
 
-    data = reclass.nodeinfo(minion_id)
+    data = reclass.nodeinfo(minion_id, override_environment=saltenv)
     params = data.get('parameters', {})
     params['__reclass__'] = {}
     params['__reclass__']['nodename'] = minion_id
@@ -53,9 +58,15 @@ def ext_pillar(minion_id, pillar,
     return params
 
 
-def top(minion_id, storage_type=OPT_STORAGE_TYPE,
-        inventory_base_uri=OPT_INVENTORY_BASE_URI, nodes_uri=OPT_NODES_URI,
-        classes_uri=OPT_CLASSES_URI, class_mappings=None, compose_node_name=OPT_COMPOSE_NODE_NAME,
+def top(minion_id,
+        saltenv=None,
+        storage_type=OPT_STORAGE_TYPE,
+        inventory_base_uri=OPT_INVENTORY_BASE_URI,
+        nodes_uri=OPT_NODES_URI,
+        classes_uri=OPT_CLASSES_URI,
+        class_mappings=None,
+        compose_node_name=OPT_COMPOSE_NODE_NAME,
+        allow_adapter_env_override=OPT_ALLOW_ADAPTER_ENV_OVERRIDE,
         **kwargs):
 
     path_mangler = get_path_mangler(storage_type)
@@ -64,11 +75,14 @@ def top(minion_id, storage_type=OPT_STORAGE_TYPE,
     settings = Settings(kwargs)
     reclass = Core(storage, class_mappings, settings, input_data=None)
 
+    if not allow_adapter_env_override:
+        saltenv = None
+
     # if the minion_id is not None, then return just the applications for the
     # specific minion, otherwise return the entire top data (which we need for
     # CLI invocations of the adapter):
     if minion_id is not None:
-        data = reclass.nodeinfo(minion_id)
+        data = reclass.nodeinfo(minion_id, override_environment=saltenv)
         applications = data.get('applications', [])
         env = data['environment']
         return {env: applications}
@@ -98,6 +112,10 @@ def cli():
                               inventory_shortopt='-t',
                               inventory_longopt='--top',
                               inventory_help='output the state tops (inventory)',
+                              nodeapps_shortopt='-f',
+                              nodeapps_longopt='--formulas',
+                              nodeapps_dest='nodename',
+                              nodeapps_help='output applications list for a specific node',
                               nodeinfo_shortopt='-p',
                               nodeinfo_longopt='--pillar',
                               nodeinfo_dest='nodename',
@@ -110,23 +128,38 @@ def cli():
         defaults.pop("nodes_uri", None)
         defaults.pop("classes_uri", None)
         defaults.pop("class_mappings", None)
+        defaults.pop("saltenv", None)
 
         if options.mode == MODE_NODEINFO:
-            data = ext_pillar(options.nodename, {},
-                              storage_type=options.storage_type,
-                              inventory_base_uri=options.inventory_base_uri,
-                              nodes_uri=options.nodes_uri,
-                              classes_uri=options.classes_uri,
-                              class_mappings=class_mappings,
-                              **defaults)
+            data = ext_pillar(
+                     options.nodename, {},
+                     saltenv=options.environment,
+                     storage_type=options.storage_type,
+                     inventory_base_uri=options.inventory_base_uri,
+                     nodes_uri=options.nodes_uri,
+                     classes_uri=options.classes_uri,
+                     class_mappings=class_mappings,
+                     **defaults)
+        elif options.mode == MODE_NODEAPPS:
+            data = top(
+                     minion_id=options.nodename,
+                     saltenv=options.environment,
+                     storage_type=options.storage_type,
+                     inventory_base_uri=options.inventory_base_uri,
+                     nodes_uri=options.nodes_uri,
+                     classes_uri=options.classes_uri,
+                     class_mappings=class_mappings,
+                     **defaults)
         else:
-            data = top(minion_id=None,
-                       storage_type=options.storage_type,
-                       inventory_base_uri=options.inventory_base_uri,
-                       nodes_uri=options.nodes_uri,
-                       classes_uri=options.classes_uri,
-                       class_mappings=class_mappings,
-                       **defaults)
+            data = top(
+                     minion_id=None,
+                     saltenv=None,
+                     storage_type=options.storage_type,
+                     inventory_base_uri=options.inventory_base_uri,
+                     nodes_uri=options.nodes_uri,
+                     classes_uri=options.classes_uri,
+                     class_mappings=class_mappings,
+                     **defaults)
 
         print(output(data, options.output, options.pretty_print, options.no_refs))
 

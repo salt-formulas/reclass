@@ -15,7 +15,7 @@ import yaml, os, optparse, posix, sys
 
 from . import errors, get_path_mangler
 from .defaults import *
-from .constants import MODE_NODEINFO, MODE_INVENTORY
+from .constants import MODE_NODEINFO, MODE_INVENTORY, MODE_NODEAPPS
 
 
 def make_db_options_group(parser, defaults={}):
@@ -42,12 +42,16 @@ def make_db_options_group(parser, defaults={}):
     ret.add_option('-x', '--ignore-class-notfound-regexp', dest='ignore_class_notfound_regexp',
                    default=defaults.get('ignore_class_notfound_regexp', OPT_IGNORE_CLASS_NOTFOUND_REGEXP),
                    help='regexp for not found classes [%default]')
+    ret.add_option('-e', '--environment', dest='environment',
+                   default=None,
+                   help='override the environment of the node for nodeinfo requests')
     return ret
 
 
 def make_output_options_group(parser, defaults={}):
-    ret = optparse.OptionGroup(parser, 'Output options',
-                               'Configure the way {0} prints data'.format(parser.prog))
+    ret = optparse.OptionGroup(
+              parser, 'Output options',
+              'Configure the way {0} prints data'.format(parser.prog))
     ret.add_option('-o', '--output', dest='output',
                    default=defaults.get('output', OPT_OUTPUT),
                    help='output format (yaml or json) [%default]')
@@ -65,9 +69,11 @@ def make_output_options_group(parser, defaults={}):
     return ret
 
 
-def make_modes_options_group(parser, inventory_shortopt, inventory_longopt,
-                             inventory_help, nodeinfo_shortopt,
-                             nodeinfo_longopt, nodeinfo_dest, nodeinfo_help):
+def make_modes_options_group(
+        parser,
+        inventory_shortopt, inventory_longopt, inventory_help,
+        nodeapps_shortopt, nodeapps_longopt, nodeapps_dest, nodeapps_help,
+        nodeinfo_shortopt, nodeinfo_longopt, nodeinfo_dest, nodeinfo_help):
 
     def _mode_checker_cb(option, opt_str, value, parser):
         if hasattr(parser.values, 'mode'):
@@ -76,6 +82,9 @@ def make_modes_options_group(parser, inventory_shortopt, inventory_longopt,
         if option == parser.get_option(nodeinfo_longopt):
             setattr(parser.values, 'mode', MODE_NODEINFO)
             setattr(parser.values, nodeinfo_dest, value)
+        elif option == parser.get_option(nodeapps_longopt):
+            setattr(parser.values, 'mode', MODE_NODEAPPS)
+            setattr(parser.values, nodeapps_dest, value)
         else:
             setattr(parser.values, 'mode', MODE_INVENTORY)
             setattr(parser.values, nodeinfo_dest, None)
@@ -85,6 +94,10 @@ def make_modes_options_group(parser, inventory_shortopt, inventory_longopt,
     ret.add_option(inventory_shortopt, inventory_longopt,
                    action='callback', callback=_mode_checker_cb,
                    help=inventory_help)
+    ret.add_option(nodeapps_shortopt, nodeapps_longopt,
+                   default=None, dest=nodeapps_dest, type='string',
+                   action='callback', callback=_mode_checker_cb,
+                   help=nodeapps_help)
     ret.add_option(nodeinfo_shortopt, nodeinfo_longopt,
                    default=None, dest=nodeinfo_dest, type='string',
                    action='callback', callback=_mode_checker_cb,
@@ -92,16 +105,12 @@ def make_modes_options_group(parser, inventory_shortopt, inventory_longopt,
     return ret
 
 
-def make_parser_and_checker(name, version, description,
-                            inventory_shortopt='-i',
-                            inventory_longopt='--inventory',
-                            inventory_help='output the entire inventory',
-                            nodeinfo_shortopt='-n',
-                            nodeinfo_longopt='--nodeinfo',
-                            nodeinfo_dest='nodename',
-                            nodeinfo_help='output information for a specific node',
-                            add_options_cb=None,
-                            defaults={}):
+def make_parser_and_checker(
+        name, version, description,
+        inventory_shortopt, inventory_longopt, inventory_help,
+        nodeapps_shortopt, nodeapps_longopt, nodeapps_dest, nodeapps_help,
+        nodeinfo_shortopt, nodeinfo_longopt, nodeinfo_dest, nodeinfo_help,
+        add_options_cb, defaults):
 
     parser = optparse.OptionParser(version=version)
     parser.prog = name
@@ -121,21 +130,22 @@ def make_parser_and_checker(name, version, description,
     if callable(add_options_cb):
         add_options_cb(parser, defaults)
 
-    modes_group = make_modes_options_group(parser, inventory_shortopt,
-                                           inventory_longopt, inventory_help,
-                                           nodeinfo_shortopt,
-                                           nodeinfo_longopt, nodeinfo_dest,
-                                           nodeinfo_help)
+    modes_group = make_modes_options_group(
+                      parser,
+                      inventory_shortopt, inventory_longopt, inventory_help,
+                      nodeapps_shortopt, nodeapps_longopt, nodeapps_dest, nodeapps_help,
+                      nodeinfo_shortopt, nodeinfo_longopt, nodeinfo_dest, nodeinfo_help)
     parser.add_option_group(modes_group)
 
     def option_checker(options, args):
         if len(args) > 0:
             parser.error('No arguments allowed')
         elif not hasattr(options, 'mode') \
-                or options.mode not in (MODE_NODEINFO, MODE_INVENTORY):
+                or options.mode not in (MODE_NODEINFO, MODE_NODEAPPS, MODE_INVENTORY):
             parser.error('You need to specify exactly one mode '\
-                         '({0} or {1})'.format(inventory_longopt,
-                                               nodeinfo_longopt))
+                         '({0}, {1} or {2})'.format(inventory_longopt,
+                                                    nodeinfo_longopt,
+                                                    nodeapps_longopt))
         elif options.mode == MODE_NODEINFO \
                 and not getattr(options, nodeinfo_dest, None):
             parser.error('Mode {0} needs {1}'.format(nodeinfo_longopt,
@@ -152,6 +162,10 @@ def get_options(name, version, description,
                             inventory_shortopt='-i',
                             inventory_longopt='--inventory',
                             inventory_help='output the entire inventory',
+                            nodeapps_shortopt='-f',
+                            nodeapps_longopt='--nodeapps',
+                            nodeapps_dest='nodename',
+                            nodeapps_help='output apps list for a specific node',
                             nodeinfo_shortopt='-n',
                             nodeinfo_longopt='--nodeinfo',
                             nodeinfo_dest='nodename',
@@ -159,15 +173,12 @@ def get_options(name, version, description,
                             add_options_cb=None,
                             defaults={}):
 
-    parser, checker = make_parser_and_checker(name, version, description,
-                                              inventory_shortopt,
-                                              inventory_longopt,
-                                              inventory_help,
-                                              nodeinfo_shortopt,
-                                              nodeinfo_longopt, nodeinfo_dest,
-                                              nodeinfo_help,
-                                              add_options_cb,
-                                              defaults=defaults)
+    parser, checker = make_parser_and_checker(
+                          name, version, description,
+                          inventory_shortopt, inventory_longopt, inventory_help,
+                          nodeapps_shortopt, nodeapps_longopt, nodeapps_dest, nodeapps_help,
+                          nodeinfo_shortopt, nodeinfo_longopt, nodeinfo_dest, nodeinfo_help,
+                          add_options_cb, defaults)
     options, args = parser.parse_args()
     checker(options, args)
 
