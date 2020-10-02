@@ -24,9 +24,10 @@ class Entity(object):
     '''
     def __init__(self, settings, classes=None, applications=None,
                  parameters=None, exports=None, uri=None, name=None,
-                 environment=None):
+                 pathname=None, environment=None):
         self._uri = '' if uri is None else uri
         self._name = '' if name is None else name
+        self._pathname = '' if pathname is None else pathname
         self._classes = self._set_field(classes, Classes)
         self._applications = self._set_field(applications, Applications)
         pars = [None, settings, uri]
@@ -36,6 +37,7 @@ class Entity(object):
 
     name = property(lambda s: s._name)
     uri = property(lambda s: s._uri)
+    pathname = property(lambda s: s._pathname)
     classes = property(lambda s: s._classes)
     applications = property(lambda s: s._applications)
     parameters = property(lambda s: s._parameters)
@@ -101,10 +103,10 @@ class Entity(object):
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "%s(%r, %r, %r, %r, uri=%r, name=%r, environment=%r)" % (
+        return "%s(%r, %r, %r, %r, uri=%r, name=%r, pathname=%r, environment=%r)" % (
                    self.__class__.__name__, self.classes, self.applications,
                    self.parameters, self.exports, self.uri, self.name,
-                   self.environment)
+                   self.pathname, self.environment)
 
     def as_dict(self):
         return {'classes': self._classes.as_list(),

@@ -25,6 +25,7 @@ from six import iteritems
 from reclass.settings import Settings
 from reclass.datatypes import Entity, Classes, Parameters, Exports
 from reclass.errors import MappingFormatError, ClassNameResolveError, ClassNotFound, InvQueryClassNameResolveError, InvQueryClassNotFound, InvQueryError, InterpolationError, ResolveError
+from reclass.values import NodeInventory
 from reclass.values.parser import Parser
 
 
@@ -72,26 +73,30 @@ class Core(object):
             key = '/{0}/'.format(key)
         return key, list(lexer)
 
-    def _get_class_mappings_entity(self, nodename):
+    def _get_class_mappings_entity(self, entity):
         if not self._class_mappings:
             return Entity(self._settings, name='empty (class mappings)')
         c = Classes()
+        if self._settings.class_mappings_match_path:
+            matchname = entity.pathname
+        else:
+            matchname = entity.name
         for mapping in self._class_mappings:
             matched = False
             key, klasses = Core._shlex_split(mapping)
             if key[0] == ('/'):
-                matched = Core._match_regexp(key[1:-1], nodename)
+                matched = Core._match_regexp(key[1:-1], matchname)
                 if matched:
                     for klass in klasses:
                         c.append_if_new(matched.expand(klass))
 
             else:
-                if Core._match_glob(key, nodename):
+                if Core._match_glob(key, matchname):
                     for klass in klasses:
                         c.append_if_new(klass)
 
         return Entity(self._settings, classes=c,
-                      name='class mappings for node {0}'.format(nodename))
+                      name='class mappings for node {0}'.format(entity.name))
 
     def _get_input_data_entity(self):
         if not self._input_data:
@@ -167,7 +172,29 @@ class Core(object):
         else:
             return Parameters({}, self._settings, '')
 
+    def _get_scalar_parameters(self, node_parameters):
+        if self._settings.scalar_parameters:
+            scalars = node_parameters.as_dict().get(
+                    self._settings.scalar_parameters, {})
+            return Parameters(
+                    {self._settings.scalar_parameters: scalars}, self._settings, '__scalar__')
+        else:
+            return Parameters({}, self._settings, '')
+
     def _get_inventory(self, all_envs, environment, queries):
+        '''
+            Returns a dictionary of NodeInventory objects, one per matching node. Exports
+            which are required for the given queries (or all exports if the queries is None)
+            are rendered, remaining exports are left unrendered.
+
+            Args:
+              all_envs - if True match export values from nodes in any environment
+                         else if False match only for nodes in the same environment as the
+                         environment parameter
+              environment - node environment to match against if all_envs is False
+              queries - list of inventory queries to determine required export values
+                        or if None match all exports defined by a node
+        '''
         inventory = {}
         for nodename in self._storage.enumerate_nodes():
             try:
@@ -187,6 +214,7 @@ class Core(object):
                 except ClassNameResolveError as e:
                     raise InvQueryClassNameResolveError(e)
                 if queries is None:
+                    # This only happens if reclass is called with the --inventory option
                     try:
                         node.interpolate_exports()
                     except InterpolationError as e:
@@ -199,7 +227,7 @@ class Core(object):
                         except InterpolationError as e:
                             e.nodename = nodename
                             raise InvQueryError(q.contents, e, context=p, uri=q.uri)
-                inventory[nodename] = node.exports.as_dict()
+                inventory[nodename] = NodeInventory(node.exports.as_dict(), node_base.environment == environment)
         return inventory
 
     def _node_entity(self, nodename):
@@ -207,9 +235,10 @@ class Core(object):
         if node_entity.environment == None:
             node_entity.environment = self._settings.default_environment
         base_entity = Entity(self._settings, name='base')
-        base_entity.merge(self._get_class_mappings_entity(node_entity.name))
+        base_entity.merge(self._get_class_mappings_entity(node_entity))
         base_entity.merge(self._get_input_data_entity())
         base_entity.merge_parameters(self._get_automatic_parameters(nodename, node_entity.environment))
+        base_entity.merge_parameters(self._get_scalar_parameters(node_entity.parameters))
         seen = {}
         merge_base = self._recurse_entity(base_entity, seen=seen, nodename=nodename,
                                           environment=node_entity.environment)

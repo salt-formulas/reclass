@@ -11,7 +11,6 @@ import collections
 import distutils.version
 import errno
 import fcntl
-import fnmatch
 import os
 import time
 
@@ -34,7 +33,7 @@ import reclass.errors
 from reclass.storage import ExternalNodeStorageBase
 from reclass.storage.yamldata import YamlData
 
-FILE_EXTENSION = '.yml'
+FILE_EXTENSION = ('.yml', '.yaml')
 STORAGE_NAME = 'yaml_git'
 
 def path_mangler(inventory_base_uri, nodes_uri, classes_uri):
@@ -43,7 +42,7 @@ def path_mangler(inventory_base_uri, nodes_uri, classes_uri):
     return nodes_uri, classes_uri
 
 
-GitMD = collections.namedtuple('GitMD', ['name', 'path', 'id'], verbose=False, rename=False)
+GitMD = collections.namedtuple('GitMD', ['name', 'path', 'id'], rename=False)
 
 
 class GitURI(object):
@@ -213,13 +212,13 @@ class GitRepo(object):
             branch = {}
             files = self.files_in_branch(bname)
             for file in files:
-                if fnmatch.fnmatch(file.name, '*{0}'.format(FILE_EXTENSION)):
+                if file.name.endswith(FILE_EXTENSION):
                     name = os.path.splitext(file.name)[0]
                     relpath = os.path.dirname(file.path)
                     if callable(self._class_name_mangler):
                         relpath, name = self._class_name_mangler(relpath, name)
                     if name in ret:
-                        raise reclass.errors.DuplicateNodeNameError(self.name + ' - ' + bname, name, ret[name], path)
+                        raise reclass.errors.DuplicateNodeNameError(self.url + ' - ' + bname, name, ret[name], file)
                     else:
                         branch[name] = file
             ret[bname] = branch
@@ -234,7 +233,7 @@ class GitRepo(object):
                 if callable(self._node_name_mangler):
                     relpath, node_name = self._node_name_mangler(relpath, node_name)
                 if node_name in ret:
-                    raise reclass.errors.DuplicateNodeNameError(self.name, name, files[name], path)
+                    raise reclass.errors.DuplicateNodeNameError(self.url, name, ret[node_name].path, file.path)
                 else:
                     ret[node_name] = file
         return ret
@@ -274,7 +273,9 @@ class ExternalNodeStorage(ExternalNodeStorageBase):
     def get_node(self, name, settings):
         file = self._nodes[name]
         blob = self._repos[self._nodes_uri.repo].get(file.id)
-        entity = YamlData.from_string(blob.data, 'git_fs://{0} {1} {2}'.format(self._nodes_uri.repo, self._nodes_uri.branch, file.path)).get_entity(name, settings)
+        uri = 'git_fs://{0} {1} {2}'.format(self._nodes_uri.repo, self._nodes_uri.branch, file.path)
+        pathname = os.path.splitext(file.path)[0]
+        entity = YamlData.from_string(blob.data, uri).get_entity(name, pathname, settings)
         return entity
 
     def get_class(self, name, environment, settings):
@@ -289,7 +290,9 @@ class ExternalNodeStorage(ExternalNodeStorageBase):
             raise reclass.errors.NotFoundError("File " + name + " missing from " + uri.repo + " branch " + uri.branch)
         file = self._repos[uri.repo].files[uri.branch][name]
         blob = self._repos[uri.repo].get(file.id)
-        entity = YamlData.from_string(blob.data, 'git_fs://{0} {1} {2}'.format(uri.repo, uri.branch, file.path)).get_entity(name, settings)
+        uri = 'git_fs://{0} {1} {2}'.format(uri.repo, uri.branch, file.path)
+        pathname = os.path.splitext(file.path)[0]
+        entity = YamlData.from_string(blob.data, uri).get_entity(name, pathname, settings)
         return entity
 
     def enumerate_nodes(self):

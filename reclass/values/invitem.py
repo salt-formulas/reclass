@@ -16,8 +16,7 @@ import pyparsing as pp
 from six import iteritems
 from six import string_types
 
-from reclass.values import item
-from reclass.values import parser_funcs
+from reclass.values import item, parser_funcs
 from reclass.settings import Settings
 from reclass.utils.dictpath import DictPath
 from reclass.errors import ExpressionError, ParseError, ResolveError
@@ -200,10 +199,11 @@ class InvItem(item.Item):
 
     def _value_expression(self, inventory):
         results = {}
-        for (node, items) in iteritems(inventory):
-            if self._value_path.exists_in(items):
-                results[node] = copy.deepcopy(self._resolve(self._value_path,
-                                              items))
+        for name, node in iteritems(inventory):
+            if self.needs_all_envs or node.env_matches:
+                if self._value_path.exists_in(node.items):
+                    answer = self._resolve(self._value_path, node.items)
+                    results[name] = copy.deepcopy(answer)
         return results
 
     def _test_expression(self, context, inventory):
@@ -212,18 +212,21 @@ class InvItem(item.Item):
             raise ExpressionError(msg % str(self), tbFlag=False)
 
         results = {}
-        for node, items in iteritems(inventory):
-            if (self._question.value(context, items) and
-                    self._value_path.exists_in(items)):
-                results[node] = copy.deepcopy(
-                    self._resolve(self._value_path, items))
+        for name, node  in iteritems(inventory):
+            if self.needs_all_envs or node.env_matches:
+                if (self._question.value(context, node.items) and
+                    self._value_path.exists_in(node.items)):
+                    answer = self._resolve(self._value_path, node.items)
+                    results[name] = copy.deepcopy(answer)
         return results
 
     def _list_test_expression(self, context, inventory):
         results = []
-        for (node, items) in iteritems(inventory):
-            if self._question.value(context, items):
-                results.append(node)
+        for name, node in iteritems(inventory):
+            if self.needs_all_envs or node.env_matches:
+                if self._question.value(context, node.items):
+                    results.append(name)
+        results.sort()
         return results
 
     def render(self, context, inventory):

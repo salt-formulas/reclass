@@ -33,7 +33,7 @@ To control the feature there are two options available:
 .. code-block:: yaml
 
   ignore_class_notfound: False
-  ignore_class_regexp: ['.*']
+  ignore_class_notfound_regexp: ['.*']
 
 If you set regexp pattern to ``service.*`` all missing classes starting 'service.' will be logged with warning, but will not
 fail to return rendered reclass. Assuming all parameter interpolation passes.
@@ -691,3 +691,38 @@ classes for the pre-prod environment to use a directory on the local disc:
         storage_type: yaml_fs
         # options for yaml_fs storage type
         uri: /srv/salt/env/pre-prod/classes
+
+
+Support to use current node parameters as references in class name
+------------------------------------------------------------------
+
+With the following reclass config:
+
+.. code-block::
+
+    => /etc/reclass/nodes/mynode.yml
+    classes:
+      - common
+    parameters:
+      project: myproject
+
+    => /etc/reclass/classes/common.yml
+    class:
+      - ${project}
+
+    => /etc/reclass/classes/myproject.yml
+    parameters:
+      some:
+        project: parameters
+
+
+Will get the following result for the parameters:
+
+.. code-block:: yaml
+
+    parameters:
+      project: myproject
+      some:
+        project: parameters
+
+

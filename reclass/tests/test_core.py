@@ -23,13 +23,13 @@ except ImportError:
 
 class TestCore(unittest.TestCase):
 
-    def _core(self, dataset, opts={}):
+    def _core(self, dataset, opts={}, class_mappings=[]):
         inventory_uri = os.path.dirname(os.path.abspath(__file__)) + '/data/' + dataset
         path_mangler = get_path_mangler('yaml_fs')
         nodes_uri, classes_uri = path_mangler(inventory_uri, 'nodes', 'classes')
         settings = Settings(opts)
         storage = get_storage('yaml_fs', nodes_uri, classes_uri, settings.compose_node_name)
-        return Core(storage, None, settings)
+        return Core(storage, class_mappings, settings)
 
     def test_type_conversion(self):
         reclass = self._core('01')
@@ -72,7 +72,7 @@ class TestCore(unittest.TestCase):
         self.assertEqual(node['parameters'], params)
 
     def test_compose_node_names(self):
-        reclass = self._core('03', {'compose_node_name': True})
+        reclass = self._core('03', opts={'compose_node_name': True})
         alpha_one_node = reclass.nodeinfo('alpha.one')
         alpha_one_res = {'a': 1, 'alpha': [1, 2], 'beta': {'a': 1, 'b': 2}, 'b': 2, '_reclass_': {'environment': 'base', 'name': {'full': 'alpha.one', 'short': 'alpha'}}}
         alpha_two_node = reclass.nodeinfo('alpha.two')
@@ -85,6 +85,18 @@ class TestCore(unittest.TestCase):
         self.assertEqual(alpha_two_node['parameters'], alpha_two_res)
         self.assertEqual(beta_one_node['parameters'], beta_one_res)
         self.assertEqual(beta_two_node['parameters'], beta_two_res)
+
+    def test_class_mappings_match_path_false(self):
+        reclass = self._core('04', opts={'class_mappings_match_path': False}, class_mappings=['node*    two', 'alpha/node*    three'])
+        node = reclass.nodeinfo('node1')
+        params = { 'test1': 1, 'test2': 2, '_reclass_': {'environment': u'base', 'name': {'full': 'node1', 'short': 'node1'}}}
+        self.assertEqual(node['parameters'], params)
+
+    def test_class_mappings_match_path_true(self):
+        reclass = self._core('04', opts={'class_mappings_match_path': True}, class_mappings=['node*    two', 'alpha/node*    three'])
+        node = reclass.nodeinfo('node1')
+        params = { 'test1': 1, 'test3': 3, '_reclass_': {'environment': u'base', 'name': {'full': 'node1', 'short': 'node1'}}}
+        self.assertEqual(node['parameters'], params)
 
 
 if __name__ == '__main__':

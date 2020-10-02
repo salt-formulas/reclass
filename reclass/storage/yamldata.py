@@ -80,10 +80,7 @@ class YamlData(object):
     def count_dots(self, value):
         return len(list(self.yield_dots(value)))
 
-    def get_entity(self, name, settings):
-        #if name is None:
-        #    name = self._uri
-
+    def get_entity(self, name, pathname, settings):
         classes = self._data.get('classes')
         if classes is None:
             classes = []
@@ -108,7 +105,7 @@ class YamlData(object):
         env = self._data.get('environment', None)
 
         return datatypes.Entity(settings, classes=classes, applications=applications, parameters=parameters,
-                                exports=exports, name=name, environment=env, uri=self.uri)
+                                exports=exports, name=name, pathname=pathname, environment=env, uri=self.uri)
 
     def __str__(self):
         return '<{0} {1}, {2}>'.format(self.__class__.__name__, self._uri,

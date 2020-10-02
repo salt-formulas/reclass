@@ -101,6 +101,13 @@ end with ``.ch`` (again, note the escaped leading asterisk). Multiple classes
 can be assigned to each mapping by providing a space-separated list (class
 names cannot contain spaces anyway).
 
+By default the class mappings regex match is done against the node name. This can
+be changed to do the match against the path of the node file from the classes
+directory, but dropping the .yml extension at the end of the node file. This is
+controlled with the setting class_mappings_match_path. When False (the
+default) the match is done again the node name and when true the match is done
+against the node file path.
+
 .. warning::
 
   The class mappings do not really belong in the configuration file, as they

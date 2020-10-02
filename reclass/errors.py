@@ -117,7 +117,7 @@ class NodeNotFound(NotFoundError):
 
 class InterpolationError(ReclassException):
 
-    def __init__(self, msg, rc=posix.EX_DATAERR, nodename='', uri=None, context=None, tbFlag=True):
+    def __init__(self, msg=None, rc=posix.EX_DATAERR, nodename='', uri=None, context=None, tbFlag=True):
         super(InterpolationError, self).__init__(rc=rc, msg=msg, tbFlag=tbFlag)
         self.nodename = nodename
         self.uri = uri
@@ -291,7 +291,7 @@ class TypeMergeError(InterpolationError):
         self.type2 = value2.item_type_str()
 
     def _get_error_message(self):
-        msg = [ 'Canot merge {0} over {1}'.format(self.type1, self.type2) + self._add_context_and_uri() ]
+        msg = [ 'Cannot merge {0} over {1}'.format(self.type1, self.type2) + self._add_context_and_uri() ]
         return msg
 
 
@@ -330,7 +330,7 @@ class MappingFormatError(MappingError):
 
 class NameError(ReclassException):
 
-    def __init__(self, msg, rc=posix.EX_DATAERR):
+    def __init__(self, msg=None, rc=posix.EX_DATAERR):
         super(NameError, self).__init__(rc=rc, msg=msg)
 
 

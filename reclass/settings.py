@@ -19,6 +19,8 @@ class Settings(object):
         'allow_dict_over_scalar': defaults.OPT_ALLOW_DICT_OVER_SCALAR,
         'allow_none_override': defaults.OPT_ALLOW_NONE_OVERRIDE,
         'automatic_parameters': defaults.AUTOMATIC_RECLASS_PARAMETERS,
+        'class_mappings_match_path': defaults.CLASS_MAPPINGS_MATCH_PATH,
+        'scalar_parameters': defaults.SCALAR_RECLASS_PARAMETERS,
         'default_environment': defaults.DEFAULT_ENVIRONMENT,
         'delimiter': defaults.PARAMETER_INTERPOLATION_DELIMITER,
         'dict_key_override_prefix':
@@ -39,7 +41,7 @@ class Settings(object):
             defaults.OPT_IGNORE_CLASS_NOTFOUND_REGEXP,
         'ignore_class_notfound_warning':
             defaults.OPT_IGNORE_CLASS_NOTFOUND_WARNING,
-        'ignore_overwritten_missing_referencesdefaults.':
+        'ignore_overwritten_missing_references':
             defaults.OPT_IGNORE_OVERWRITTEN_MISSING_REFERENCES,
         'group_errors': defaults.OPT_GROUP_ERRORS,
         'compose_node_name': defaults.OPT_COMPOSE_NODE_NAME,

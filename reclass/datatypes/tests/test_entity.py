@@ -11,9 +11,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from six import iteritems
+
 from reclass.settings import Settings
 from reclass.datatypes import Entity, Classes, Parameters, Applications, Exports
 from reclass.errors import ResolveError
+from reclass.values import NodeInventory
 import unittest
 
 try:
@@ -167,6 +170,9 @@ class TestEntity(unittest.TestCase):
 
 class TestEntityNoMock(unittest.TestCase):
 
+    def _make_inventory(self, nodes):
+        return { name: NodeInventory(node, True) for name, node in iteritems(nodes) }
+
     def test_interpolate_list_types(self):
         node1_exports = Exports({'exps': [ '${one}' ] }, SETTINGS, 'first')
         node1_parameters = Parameters({'alpha': [ '${two}', '${three}' ], 'one': 1, 'two': 2, 'three': 3 }, SETTINGS, 'first')
@@ -174,33 +180,37 @@ class TestEntityNoMock(unittest.TestCase):
         node2_exports = Exports({'exps': '${alpha}' }, SETTINGS, 'second')
         node2_parameters = Parameters({}, SETTINGS, 'second')
         node2_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node2_parameters, exports=node2_exports)
-        r = {'exps': [ 1, 2, 3 ]}
+        result = {'exps': [ 1, 2, 3 ]}
         node1_entity.merge(node2_entity)
         node1_entity.interpolate(None)
         self.assertIs(type(node1_entity.exports.as_dict()['exps']), list)
-        self.assertDictEqual(node1_entity.exports.as_dict(), r)
+        self.assertDictEqual(node1_entity.exports.as_dict(), result)
 
     def test_exports_with_refs(self):
-        inventory = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}}
+        inventory = self._make_inventory({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
         node3_exports = Exports({'a': '${a}', 'b': '${b}'}, SETTINGS, '')
         node3_parameters = Parameters({'name': 'node3', 'a': '${c}', 'b': 5}, SETTINGS, '')
         node3_parameters.merge({'c': 3})
         node3_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node3_parameters, exports=node3_exports)
         node3_entity.interpolate_exports()
-        inventory['node3'] = node3_entity.exports.as_dict()
-        r = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}, 'node3': {'a': 3, 'b': 5}}
-        self.assertDictEqual(inventory, r)
+        inventory['node3'] = NodeInventory(node3_entity.exports.as_dict(), True)
+        result = { 'node1': NodeInventory({'a': 1, 'b': 2}, True),
+                   'node2': NodeInventory({'a': 3, 'b': 4}, True),
+                   'node3': NodeInventory({'a': 3, 'b': 5}, True) }
+        self.assertDictEqual(inventory, result)
 
     def test_reference_to_an_export(self):
-        inventory = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}}
+        inventory = self._make_inventory({'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}})
         node3_exports = Exports({'a': '${a}', 'b': '${b}'}, SETTINGS, '')
         node3_parameters = Parameters({'name': 'node3', 'ref': '${exp}', 'a': '${c}', 'b': 5}, SETTINGS, '')
         node3_parameters.merge({'c': 3, 'exp': '$[ exports:a ]'})
         node3_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node3_parameters, exports=node3_exports)
         node3_entity.interpolate_exports()
-        inventory['node3'] = node3_entity.exports.as_dict()
+        inventory['node3'] = NodeInventory(node3_entity.exports.as_dict(), True)
         node3_entity.interpolate(inventory)
-        res_inv = {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}, 'node3': {'a': 3, 'b': 5}}
+        res_inv = { 'node1': NodeInventory({'a': 1, 'b': 2}, True),
+                    'node2': NodeInventory({'a': 3, 'b': 4}, True),
+                    'node3': NodeInventory({'a': 3, 'b': 5}, True) }
         res_params = {'a': 3, 'c': 3, 'b': 5, 'name': 'node3', 'exp': {'node1': 1, 'node3': 3, 'node2': 3}, 'ref': {'node1': 1, 'node3': 3, 'node2': 3}}
         self.assertDictEqual(node3_parameters.as_dict(), res_params)
         self.assertDictEqual(inventory, res_inv)
@@ -218,40 +228,61 @@ class TestEntityNoMock(unittest.TestCase):
         for p, q in queries:
             node1_entity.interpolate_single_export(q)
             node2_entity.interpolate_single_export(q)
-        res_inv = {'node1': {'a': {'test': 1}}, 'node2': {'a': {'test': 2}}}
-        res_params = {'a': {'test': 1}, 'b': 1, 'name': 'node1', 'exp': {'node1': {'test': 1}, 'node2': {'test': 2}}}
-        inventory = {}
-        inventory['node1'] = node1_entity.exports.as_dict()
-        inventory['node2'] = node2_entity.exports.as_dict()
+        res_inv = { 'node1': NodeInventory({'a': {'test': 1}}, True),
+                    'node2': NodeInventory({'a': {'test': 2}}, True) }
+        res_params = { 'name': 'node1',
+                       'a': {'test': 1},
+                       'b': 1,
+                       'exp': {'node1': {'test': 1}, 'node2': {'test': 2}} }
+        inventory = self._make_inventory({'node1': node1_entity.exports.as_dict(), 'node2': node2_entity.exports.as_dict()})
         node1_entity.interpolate(inventory)
         self.assertDictEqual(node1_parameters.as_dict(), res_params)
         self.assertDictEqual(inventory, res_inv)
 
     def test_exports_with_ancestor_references(self):
-        inventory = {'node1': {'alpha' : {'beta': {'a': 1, 'b': 2}}}, 'node2': {'alpha' : {'beta': {'a': 3, 'b': 4}}}}
+        inventory = self._make_inventory({'node1': {'alpha' : {'beta': {'a': 1, 'b': 2}}}, 'node2': {'alpha' : {'beta': {'a': 3, 'b': 4}}}})
         node3_exports = Exports({'alpha': '${alpha}'}, SETTINGS, '')
         node3_parameters = Parameters({'name': 'node3', 'alpha': {'beta' : {'a': 5, 'b': 6}}, 'exp': '$[ exports:alpha:beta ]'}, SETTINGS, '')
         node3_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node3_parameters, exports=node3_exports)
-        res_params = {'exp': {'node1': {'a': 1, 'b': 2}, 'node2': {'a': 3, 'b': 4}, 'node3': {'a': 5, 'b': 6}}, 'name': 'node3', 'alpha': {'beta': {'a': 5, 'b': 6}}}
-        res_inv = {'node1': {'alpha' : {'beta': {'a': 1, 'b': 2}}}, 'node2': {'alpha' : {'beta': {'a': 3, 'b': 4}}}, 'node3': {'alpha' : {'beta': {'a': 5, 'b': 6}}}}
+        res_params = { 'name': 'node3',
+                       'exp': {'node1': {'a': 1, 'b': 2},
+                       'node2': {'a': 3, 'b': 4},
+                       'node3': {'a': 5, 'b': 6}},
+                       'alpha': {'beta': {'a': 5, 'b': 6}} }
+        res_inv = { 'node1': NodeInventory({'alpha' : {'beta': {'a': 1, 'b': 2}}}, True),
+                    'node2': NodeInventory({'alpha' : {'beta': {'a': 3, 'b': 4}}}, True),
+                    'node3': NodeInventory({'alpha' : {'beta': {'a': 5, 'b': 6}}}, True) }
         node3_entity.initialise_interpolation()
         queries = node3_entity.parameters.get_inv_queries()
         for p, q in queries:
             node3_entity.interpolate_single_export(q)
-        inventory['node3'] = node3_entity.exports.as_dict()
+        inventory['node3'] = NodeInventory(node3_entity.exports.as_dict(), True)
         node3_entity.interpolate(inventory)
         self.assertDictEqual(node3_parameters.as_dict(), res_params)
         self.assertDictEqual(inventory, res_inv)
 
     def test_exports_with_nested_references(self):
-        inventory = {'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}}
+        inventory = self._make_inventory({'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}})
         node3_exports = Exports({'alpha': '${alpha}'}, SETTINGS, '')
-        node3_parameters = Parameters({'name': 'node3', 'alpha': {'a': '${one}', 'b': '${two}'}, 'beta': '$[ exports:alpha ]', 'one': '111', 'two': '${three}', 'three': '123'}, SETTINGS, '')
+        node3_parameters = Parameters({ 'name': 'node3',
+                                        'alpha': {'a': '${one}', 'b': '${two}'},
+                                        'beta': '$[ exports:alpha ]',
+                                        'one': '111',
+                                        'two': '${three}',
+                                        'three': '123'},
+                                      SETTINGS, '')
         node3_entity = Entity(SETTINGS, classes=None, applications=None, parameters=node3_parameters, exports=node3_exports)
-        res_params = {'beta': {'node1': {'a': 1, 'b': 2}, 'node3': {'a': '111', 'b': '123'}, 'node2': {'a': 3, 'b': 4}}, 'name': 'node3', 'alpha': {'a': '111', 'b': '123'}, 'three': '123', 'two': '123', 'one': '111'}
-        res_inv = {'node1': {'alpha': {'a': 1, 'b': 2}}, 'node2': {'alpha': {'a': 3, 'b': 4}}, 'node3': {'alpha': {'a': '111', 'b': '123'}}}
+        res_params = { 'name': 'node3',
+                       'alpha': { 'a': '111', 'b': '123' },
+                       'beta': { 'node1': {'a': 1, 'b': 2 }, 'node2': { 'a': 3, 'b': 4}, 'node3': { 'a': '111', 'b': '123' } },
+                       'one': '111',
+                       'two': '123',
+                       'three': '123' }
+        res_inv = { 'node1': NodeInventory({'alpha': {'a': 1, 'b': 2}}, True),
+                    'node2': NodeInventory({'alpha': {'a': 3, 'b': 4}}, True),
+                    'node3': NodeInventory({'alpha': {'a': '111', 'b': '123'}}, True) }
         node3_entity.interpolate_exports()
-        inventory['node3'] = node3_entity.exports.as_dict()
+        inventory['node3'] = NodeInventory(node3_entity.exports.as_dict(), True)
         node3_entity.interpolate(inventory)
         self.assertDictEqual(node3_parameters.as_dict(), res_params)
         self.assertDictEqual(inventory, res_inv)
@@ -285,11 +316,12 @@ class TestEntityNoMock(unittest.TestCase):
         for p, q in queries:
             node1_entity.interpolate_single_export(q)
             node2_entity.interpolate_single_export(q)
-        res_inv = {'node1': {'a': 1}, 'node2': {}}
-        res_params = { 'a': 1, 'name': 'node1', 'exp': {'node1': 1} }
-        inventory = {}
-        inventory['node1'] = node1_entity.exports.as_dict()
-        inventory['node2'] = node2_entity.exports.as_dict()
+        res_inv = { 'node1': NodeInventory({'a': 1}, True),
+                    'node2': NodeInventory({}, True) }
+        res_params = { 'name': 'node1',
+                       'a': 1,
+                       'exp': {'node1': 1} }
+        inventory = self._make_inventory({'node1': node1_entity.exports.as_dict(), 'node2': node2_entity.exports.as_dict()})
         node1_entity.interpolate(inventory)
         self.assertDictEqual(node1_parameters.as_dict(), res_params)
         self.assertDictEqual(inventory, res_inv)

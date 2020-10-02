@@ -12,7 +12,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os, sys
-import fnmatch
 import yaml
 from reclass.output.yaml_outputter import ExplicitDumper
 from reclass.storage import ExternalNodeStorageBase
@@ -21,7 +20,7 @@ from .directory import Directory
 from reclass.datatypes import Entity
 import reclass.errors
 
-FILE_EXTENSION = '.yml'
+FILE_EXTENSION = ('.yml', '.yaml')
 STORAGE_NAME = 'yaml_fs'
 
 def vvv(msg):
@@ -71,7 +70,7 @@ class ExternalNodeStorage(ExternalNodeStorageBase):
     def _enumerate_inventory(self, basedir, name_mangler):
         ret = {}
         def register_fn(dirpath, filenames):
-            filenames = fnmatch.filter(filenames, '*{0}'.format(FILE_EXTENSION))
+            filenames = [f for f in filenames if f.endswith(FILE_EXTENSION)]
             vvv('REGISTER {0} in path {1}'.format(filenames, dirpath))
             for f in filenames:
                 name = os.path.splitext(f)[0]
@@ -96,18 +95,20 @@ class ExternalNodeStorage(ExternalNodeStorageBase):
         try:
             relpath = self._nodes[name]
             path = os.path.join(self.nodes_uri, relpath)
+            pathname = os.path.splitext(relpath)[0]
         except KeyError as e:
             raise reclass.errors.NodeNotFound(self.name, name, self.nodes_uri)
-        entity = YamlData.from_file(path).get_entity(name, settings)
+        entity = YamlData.from_file(path).get_entity(name, pathname, settings)
         return entity
 
     def get_class(self, name, environment, settings):
         vvv('GET CLASS {0}'.format(name))
         try:
             path = os.path.join(self.classes_uri, self._classes[name])
+            pathname = os.path.splitext(self._classes[name])[0]
         except KeyError as e:
             raise reclass.errors.ClassNotFound(self.name, name, self.classes_uri)
-        entity = YamlData.from_file(path).get_entity(name, settings)
+        entity = YamlData.from_file(path).get_entity(name, pathname, settings)
         return entity
 
     def enumerate_nodes(self):

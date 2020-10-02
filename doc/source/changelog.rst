@@ -5,6 +5,10 @@ ChangeLog
 ========= ========== ========================================================
 Version   Date       Changes
 ========= ========== ========================================================
+1.7.0     2020-10-02 Fixes and few new features:
+                     * Allow class mappings to wildcard match against either the node name and class
+                     * Support for .yaml along with .yml
+                     * Support to use current node parameters as references in class name
 1.6.0     2018-11-06 * Python code and parser refactoring by a-ovchinnikov
                      * Improvements in yaml_git and mixed setup by Andrew Pickford
                      * Relative paths in class names by Petr Michalec, Martin Polreich and Andrew Pickford
