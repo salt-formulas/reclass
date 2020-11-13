@@ -600,7 +600,8 @@ be overridden and set to the value of either saltenv oe pillarenv. Should a salt
 set the value of pillarenv takes precedence.
 
 Currently in order to use this functionality the default salt reclass adapter provided with salt must be overridden. Place the
-file contrib/reclass_adapter.py in the pillar directory of the salt master extension_modules directory.
+file contrib/modules/pillar/reclass_adapter.py in the pillar directory of the salt master extension_modules directory and the
+file contrib/modules/tops/reclass_adapter.py in the tops directory of the salt master extension_modules directory.
 
 
 Git storage type

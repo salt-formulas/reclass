@@ -25,7 +25,7 @@ from reclass.settings import Settings
 from reclass.version import *
 
 def ext_pillar(minion_id, pillar,
-               saltenv=None,
+               pillarenv=None,
                storage_type=OPT_STORAGE_TYPE,
                inventory_base_uri=OPT_INVENTORY_BASE_URI,
                nodes_uri=OPT_NODES_URI,
@@ -43,12 +43,12 @@ def ext_pillar(minion_id, pillar,
     if propagate_pillar_data_to_reclass:
         input_data = pillar
     if not allow_adapter_env_override:
-        saltenv = None
+        pillarenv = None
 
     settings = Settings(kwargs)
     reclass = Core(storage, class_mappings, settings, input_data=input_data)
 
-    data = reclass.nodeinfo(minion_id, override_environment=saltenv)
+    data = reclass.nodeinfo(minion_id, override_environment=pillarenv)
     params = data.get('parameters', {})
     params['__reclass__'] = {}
     params['__reclass__']['nodename'] = minion_id
@@ -59,7 +59,7 @@ def ext_pillar(minion_id, pillar,
 
 
 def top(minion_id,
-        saltenv=None,
+        pillarenv=None,
         storage_type=OPT_STORAGE_TYPE,
         inventory_base_uri=OPT_INVENTORY_BASE_URI,
         nodes_uri=OPT_NODES_URI,
@@ -76,13 +76,13 @@ def top(minion_id,
     reclass = Core(storage, class_mappings, settings, input_data=None)
 
     if not allow_adapter_env_override:
-        saltenv = None
+        pillarenv = None
 
     # if the minion_id is not None, then return just the applications for the
     # specific minion, otherwise return the entire top data (which we need for
     # CLI invocations of the adapter):
     if minion_id is not None:
-        data = reclass.nodeinfo(minion_id, override_environment=saltenv)
+        data = reclass.nodeinfo(minion_id, override_environment=pillarenv)
         applications = data.get('applications', [])
         env = data['environment']
         return {env: applications}
@@ -128,12 +128,12 @@ def cli():
         defaults.pop("nodes_uri", None)
         defaults.pop("classes_uri", None)
         defaults.pop("class_mappings", None)
-        defaults.pop("saltenv", None)
+        defaults.pop("pillarenv", None)
 
         if options.mode == MODE_NODEINFO:
             data = ext_pillar(
                      options.nodename, {},
-                     saltenv=options.environment,
+                     pillarenv=options.environment,
                      storage_type=options.storage_type,
                      inventory_base_uri=options.inventory_base_uri,
                      nodes_uri=options.nodes_uri,
@@ -143,7 +143,7 @@ def cli():
         elif options.mode == MODE_NODEAPPS:
             data = top(
                      minion_id=options.nodename,
-                     saltenv=options.environment,
+                     pillarenv=options.environment,
                      storage_type=options.storage_type,
                      inventory_base_uri=options.inventory_base_uri,
                      nodes_uri=options.nodes_uri,
@@ -153,7 +153,7 @@ def cli():
         else:
             data = top(
                      minion_id=None,
-                     saltenv=None,
+                     pillarenv=None,
                      storage_type=options.storage_type,
                      inventory_base_uri=options.inventory_base_uri,
                      nodes_uri=options.nodes_uri,

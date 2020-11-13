@@ -126,15 +126,16 @@ def ext_pillar(minion_id, pillar, **kwargs):
 
         # if saltenv or pillarenv has been set add it to the kwargs, this allows
         # reclass to override a nodes environment
-        if 'saltenv' in __opts__:
-            kwargs['saltenv'] = __opts__['saltenv']
-        if 'pillarenv' in __opts__:
-            kwargs['saltenv'] = __opts__['pillarenv']
+        env_override = None
+        if __opts__.get('saltenv', None):
+            env_override = __opts__['saltenv']
+        if __opts__.get('pillarenv', None):
+            env_override = __opts__['pillarenv']
 
         # I purposely do not pass any of __opts__ or __salt__ or __grains__
         # to reclass, as I consider those to be Salt-internal and reclass
         # should not make any assumptions about it.
-        return reclass_ext_pillar(minion_id, pillar, **kwargs)
+        return reclass_ext_pillar(minion_id, pillar, pillarenv=env_override, **kwargs)
 
     except TypeError as e:
         if 'unexpected keyword argument' in six.text_type(e):
