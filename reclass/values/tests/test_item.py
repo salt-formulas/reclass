@@ -8,7 +8,10 @@ from reclass.values.dictitem import DictItem
 from reclass.values.item import ContainerItem
 from reclass.values.item import ItemWithReferences
 import unittest
-from mock import MagicMock
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 SETTINGS = Settings()
 
@@ -16,7 +19,7 @@ SETTINGS = Settings()
 class TestItemWithReferences(unittest.TestCase):
 
     def test_assembleRef_allrefs(self):
-        phonyitem = MagicMock()
+        phonyitem = mock.MagicMock()
         phonyitem.has_references = True
         phonyitem.get_references = lambda *x: [1]
 
@@ -26,7 +29,7 @@ class TestItemWithReferences(unittest.TestCase):
         self.assertTrue(iwr.allRefs)
 
     def test_assembleRef_partial(self):
-        phonyitem = MagicMock()
+        phonyitem = mock.MagicMock()
         phonyitem.has_references = True
         phonyitem.allRefs = False
         phonyitem.get_references = lambda *x: [1]

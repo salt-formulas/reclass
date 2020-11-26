@@ -9,14 +9,17 @@ from reclass.values.listitem import ListItem
 from reclass.values.dictitem import DictItem
 from reclass.values.refitem import RefItem
 import unittest
-from mock import MagicMock
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 SETTINGS = Settings()
 
 class TestRefItem(unittest.TestCase):
 
     def test_assembleRefs_ok(self):
-        phonyitem = MagicMock()
+        phonyitem = mock.MagicMock()
         phonyitem.render = lambda x, k: 'bar'
         phonyitem.has_references = True
         phonyitem.get_references = lambda *x: ['foo']
@@ -27,7 +30,7 @@ class TestRefItem(unittest.TestCase):
         self.assertTrue(iwr.allRefs)
 
     def test_assembleRefs_failedrefs(self):
-        phonyitem = MagicMock()
+        phonyitem = mock.MagicMock()
         phonyitem.render.side_effect = errors.ResolveError('foo')
         phonyitem.has_references = True
         phonyitem.get_references = lambda *x: ['foo']
