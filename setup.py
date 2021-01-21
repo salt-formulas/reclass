@@ -42,7 +42,10 @@ setup(
     url = URL,
     packages = find_packages(exclude=['*tests']), #FIXME validate this
     entry_points = { 'console_scripts': console_scripts },
-    install_requires = ['pyparsing', 'pyyaml', 'six', 'enum34', 'ddt'], #FIXME pygit2 (require libffi-dev, libgit2-dev 0.26.x )
+    install_requires = ['pyparsing', 'pyyaml', 'six', 'ddt'], #FIXME pygit2 (require libffi-dev, libgit2-dev 0.26.x )
+    extras_require = {
+        ":python_version<'3.4'": ['enum34'],
+    },
 
     classifiers=[
         'Development Status :: 4 - Beta',
