@@ -20,4 +20,5 @@ class _Constant(object):
     __str__ = __repr__ = lambda self: self._repr
 
 MODE_NODEINFO = _Constant('NODEINFO')
+MODE_NODEAPPS = _Constant('NODEAPPS')
 MODE_INVENTORY = _Constant('INVENTORY')

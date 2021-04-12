@@ -579,6 +579,31 @@ This adds the subfolder to the node name and the structure above can then be use
 If the subfolder path starts with the underscore character ``_``, then the subfolder path is NOT added to the node name.
 
 
+Override node environment
+-------------------------
+
+The environment of a node is defined in it's node file. This can be overridden on the command line with the option
+'--environment'. For example:
+
+``reclass.py --nodeinfo node1 --environment test``
+
+will return the node information for node1 as if the node was in the test environment, regardless of the environment value
+in the node file.
+
+When the node envrionment is overridden inventory queries that do not have the AllEnvs flag set will still return data for
+other nodes matching the original, none overridden, environment.
+
+When using reclass with salt the reclass node environment can be overridden on the salt command line. This is controlled by the
+configuration option allow_adapter_env_override. When False (the default) no override is done. If allow_adapter_env_override is
+true and either saltenv or pillarenv (depending on the salt command) is set on the salt command line the node environment will
+be overridden and set to the value of either saltenv oe pillarenv. Should a salt command allow both saltenv and pillarenv to be
+set the value of pillarenv takes precedence.
+
+Currently in order to use this functionality the default salt reclass adapter provided with salt must be overridden. Place the
+file contrib/modules/pillar/reclass_adapter.py in the pillar directory of the salt master extension_modules directory and the
+file contrib/modules/tops/reclass_adapter.py in the tops directory of the salt master extension_modules directory.
+
+
 Git storage type
 ----------------
 
