@@ -7,6 +7,9 @@ from reclass.values.listitem import ListItem
 from reclass.values.dictitem import DictItem
 from reclass.values.item import ContainerItem
 from reclass.values.item import ItemWithReferences
+from reclass.utils.parameterdict import ParameterDict
+from reclass.utils.parameterlist import ParameterList
+
 import unittest
 from mock import MagicMock
 
@@ -40,9 +43,11 @@ class TestItemWithReferences(unittest.TestCase):
 class TestContainerItem(unittest.TestCase):
 
     def test_render(self):
-        container = ContainerItem('foo', SETTINGS)
+        scalar1 = ScaItem(1, SETTINGS)
+        scalar2 = ScaItem(2, SETTINGS)
+        container = ContainerItem(ParameterList([ scalar1, scalar2 ]), SETTINGS)
 
-        self.assertEquals(container.render(None, None), 'foo')
+        self.assertEquals(container.render(None, None), ParameterList([ scalar1, scalar2 ]))
 
 if __name__ == '__main__':
     unittest.main()

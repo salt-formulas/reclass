@@ -9,8 +9,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from enum import Enum
+from six import iteritems
 
 from reclass.utils.dictpath import DictPath
+from reclass.utils.parameterdict import ParameterDict
+from reclass.utils.parameterlist import ParameterList
 
 ItemTypes = Enum('ItemTypes',
                  ['COMPOSITE', 'DICTIONARY', 'INV_QUERY', 'LIST',
@@ -84,6 +87,15 @@ class ItemWithReferences(Item):
 
 
 class ContainerItem(Item):
+
+    def __init__(self, items, settings):
+        super(ContainerItem, self).__init__(items, settings)
+        self.inv_refs = []
+        self.ignore_failed_render = True
+        self.needs_all_envs = False
+
+    def get_inv_references(self):
+        return self.inv_refs
 
     def is_container(self):
         return True

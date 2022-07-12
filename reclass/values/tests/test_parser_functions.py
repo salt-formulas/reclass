@@ -44,10 +44,13 @@ test_pairs_full = (
     ('$[foo]', [(pf.tags.INV, [(pf.tags.STR, 'foo')])]),
 
     # Escape sequences.
-    # NOTE: these sequences apparently are not working as expected.
-    #(r'\\\\${foo}', [(pf.tags.REF, [(pf.tags.STR, 'foo')])]),
-    #(r'\\${foo}', [(pf.tags.REF, [(pf.tags.STR, 'foo')])]),
-    #(r'\${foo}', [(pf.tags.REF, [(pf.tags.STR, 'foo')])]),
+    (r'\${foo}', [(pf.tags.STR, '${'), (pf.tags.STR, 'foo}')]),
+    # Note the double backslashes '\\' below which python reduces to a
+    # single backslash
+    (r'\\${foo}', [(pf.tags.STR, '\\'), (pf.tags.REF, [(pf.tags.STR, 'foo')])]),
+    # This is probably not would be expected. With \\\\$ the backslash closest to the $ sign
+    # is removed and the rest pass through
+    #(r'\\\\${foo}', [(pf.tags.STR, r'\\'), (pf.tags.STR, '\\'), (pf.tags.REF, [(pf.tags.STR, 'foo')])]),
 
     # Basic combinations.
     ('bar$[foo]', [(pf.tags.STR, 'bar'),
