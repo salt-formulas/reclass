@@ -169,7 +169,8 @@ class Core(object):
                 '_reclass_': {
                     'name': {
                         'full': nodename,
-                        'short': nodename.split('.')[0]
+                        'short': nodename.split('.').pop(),
+                        'parts': nodename.split('.')
                     },
                 'environment': environment
                 }
