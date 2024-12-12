@@ -14,6 +14,11 @@ import functools
 import pyparsing as pp
 import six
 
+try:
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
+
 tags = enum.Enum('Tags', ['STR', 'REF', 'INV'])
 
 _OBJ = 'OBJ'
@@ -49,7 +54,7 @@ def _asList(x):
     return x
 
 def listify(w, modifier=_asList):
-    if (isinstance(w, collections.Iterable) and
+    if (isinstance(w, collectionsAbc.Iterable) and
             not isinstance(w, six.string_types)):
         cls = type(w)
         if cls == pp.ParseResults:
