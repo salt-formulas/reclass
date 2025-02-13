@@ -34,6 +34,7 @@ class Entity(object):
         self._parameters = self._set_field(parameters, Parameters, pars)
         self._exports = self._set_field(exports, Exports, pars)
         self._environment = environment
+        self._original_environment = environment
 
     name = property(lambda s: s._name)
     uri = property(lambda s: s._uri)
@@ -42,6 +43,7 @@ class Entity(object):
     applications = property(lambda s: s._applications)
     parameters = property(lambda s: s._parameters)
     exports = property(lambda s: s._exports)
+    original_environment = property(lambda s: s._original_environment)
 
     @property
     def environment(self):
@@ -71,6 +73,7 @@ class Entity(object):
         self._parameters._uri = other.uri
         if other.environment != None:
             self._environment = other.environment
+            self._original_environment = other.original_environment
 
     def merge_parameters(self, params):
         self._parameters.merge(params)

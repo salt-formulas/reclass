@@ -13,6 +13,7 @@ from six import string_types, iteritems
 class Settings(object):
 
     known_opts = {
+        'allow_adapter_env_override': defaults.OPT_ALLOW_ADAPTER_ENV_OVERRIDE,
         'allow_scalar_over_dict': defaults.OPT_ALLOW_SCALAR_OVER_DICT,
         'allow_scalar_over_list': defaults.OPT_ALLOW_SCALAR_OVER_LIST,
         'allow_list_over_scalar': defaults.OPT_ALLOW_LIST_OVER_SCALAR,
