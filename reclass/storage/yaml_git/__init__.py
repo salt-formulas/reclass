@@ -8,11 +8,15 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import collections
-import distutils.version
 import errno
 import fcntl
 import os
 import time
+
+try:
+    from distutils.version import LooseVersion as Version
+except ModuleNotFoundError:
+    from packaging.version import Version
 
 # Squelch warning on centos7 due to upgrading cffi
 # see https://github.com/saltstack/salt/pull/39871
@@ -146,7 +150,7 @@ class GitRepo(object):
                 creds = pygit2.KeypairFromAgent(user)
 
             pygit2_version = pygit2.__version__
-            if distutils.version.LooseVersion(pygit2_version) >= distutils.version.LooseVersion('0.23.2'):
+            if Version(pygit2_version) >= Version('0.23.2'):
                 self.remotecallbacks = pygit2.RemoteCallbacks(credentials=creds)
                 self.credentials = None
             else:

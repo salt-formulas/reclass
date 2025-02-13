@@ -45,6 +45,7 @@ setup(
     install_requires = ['pyparsing', 'pyyaml', 'six', 'ddt'], #FIXME pygit2 (require libffi-dev, libgit2-dev 0.26.x )
     extras_require = {
         ":python_version<'3.4'": ['enum34'],
+        ":python_version>'3.12'": ['packaging'],
     },
 
     classifiers=[
